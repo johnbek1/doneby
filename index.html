@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DoneBy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#f6efe1;--muted:#9aa0a6;--line:#2c3035;--panel:#1a1d20;
+    --amb1:#3a3f44;--amb2:#14171a;--floor1:#41474d;--floor2:#23272b;--grid:#4a5158;
+    --wall1:#3c4248;--wall2:#1c2024;--back1:#34393e;--back2:#181b1e;--glow:rgba(185,195,205,.26);--accent:#c9ccd0;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{font-family:'Inter',sans-serif;background:#0a0806;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+  .phone{width:100%;max-width:390px;height:min(820px,94vh);border-radius:36px;overflow:hidden;position:relative;background:#100c08;
+    box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 8px #000,0 0 0 9px #2a2520;display:flex;flex-direction:column}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .35s;overflow-y:auto;background:#100c08}
+  .screen.active{opacity:1;pointer-events:auto}
+  .pad{padding:30px 26px}
+  .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-family:'Fraunces';font-weight:600;letter-spacing:-.5px;line-height:1.08;font-size:26px;margin:14px 0 10px;color:var(--ink)}
+  .sub{color:var(--muted);font-size:15px;line-height:1.5;margin-bottom:20px}
+  label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .field{margin:16px 0}
+  input[type=text]{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:15px 16px;border-radius:13px;font-size:16px;font-family:inherit;margin-top:8px;outline:none}
+  input[type=text]:focus{border-color:var(--accent)}
+  .linkpreview{margin-top:12px;font-size:15px;color:var(--muted);font-family:'Fraunces'}
+  .linkpreview b{color:var(--accent);font-weight:600}
+  .btn{display:block;width:100%;text-align:center;background:var(--accent);color:#2a1d08;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;transition:transform .12s,filter .2s}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{filter:grayscale(.6) brightness(.7)}
+  .spacer{flex:1}
+  .nav{padding:16px 24px 24px;display:flex;gap:10px}
+  .pulse{animation:pul 1.6s ease-in-out infinite}
+  @keyframes pul{0%,100%{box-shadow:0 0 0 0 rgba(216,169,74,.4)}50%{box-shadow:0 0 0 10px rgba(216,169,74,0)}}
+
+  /* upload step */
+  .bigadd{display:block;width:100%;border:2px dashed var(--line);background:var(--panel);color:var(--accent);border-radius:16px;padding:20px;text-align:center;font-weight:600;font-size:16px;cursor:pointer;margin:6px 0 10px}
+  .bigadd .ic{font-size:28px;display:block;margin-bottom:6px}
+  .bigadd small{display:block;color:var(--muted);font-weight:400;margin-top:4px;font-size:12px}
+  .miniadd{border:1.5px dashed var(--line);background:transparent;color:var(--muted);border-radius:13px;padding:12px;text-align:center;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:12px}
+  .miniadd b{color:var(--accent)}
+  .uploadgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin:4px 0}
+  .cell{aspect-ratio:1;border-radius:12px;overflow:hidden;position:relative;background:var(--panel);border:1px solid var(--line)}
+  .cell img,.cell video{width:100%;height:100%;object-fit:cover;display:block}
+  .cell .del{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.6);color:#fff;width:22px;height:22px;border-radius:50%;font-size:13px;line-height:22px;text-align:center;cursor:pointer}
+  .cell .vbadge{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px}
+  .count{font-size:13px;color:var(--muted);margin:14px 0 4px;display:flex;justify-content:space-between;align-items:center}
+  .count b{color:var(--ink)}
+
+  /* ===== PAGE (the "house") ===== */
+  .page{flex:1;overflow-y:auto;padding-bottom:14px}
+  /* floor 1: profile + about */
+  .profilebar{display:flex;align-items:center;gap:13px;padding:18px 18px 14px}
+  .avatar{width:58px;height:58px;border-radius:50%;flex-shrink:0;background:var(--panel);border:2px solid var(--accent);
+    background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;cursor:pointer}
+  .pinfo{flex:1;min-width:0}
+  .pname{font-family:'Fraunces';font-size:19px;font-weight:600;color:var(--ink);line-height:1.1}
+  .pabout{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.35;cursor:pointer}
+  .pabout .edit{color:var(--accent);font-weight:600}
+  .dbtag{font-family:'Fraunces';font-weight:700;font-size:13px;color:var(--muted);align-self:flex-start}
+  .dbtag span{color:var(--accent)}
+
+  /* ===== floor 2: the cylinder room =====
+     The photo ring spins around a vertical axis (left -> front -> right -> back),
+     so the wall behind curves away on the LEFT and RIGHT, like standing inside
+     a round room with the ring turning in the middle. */
+  .roomband{position:relative;height:360px;margin:2px 0 4px;overflow:hidden;background:#06070a;perspective:760px;perspective-origin:50% 50%}
+  /* base wall surface — also holds a custom photo when set */
+  .hub{position:absolute;inset:0;overflow:hidden;background-size:cover;background-position:center;
+    background:radial-gradient(120% 100% at 50% 46%,var(--back1) 0%,var(--back2) 58%,var(--wall2) 100%)}
+  /* curvature shading: bright down the middle, dark toward BOTH sides
+     -> the round wall curves away to your left and right */
+  .hub::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(90deg,
+      rgba(0,0,0,.74) 0%,
+      rgba(0,0,0,.22) 22%,
+      rgba(255,255,255,.06) 50%,
+      rgba(0,0,0,.22) 78%,
+      rgba(0,0,0,.74) 100%)}
+  /* depth: the centre of the room sinks back, floor & ceiling fall off */
+  .hub::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 84% 64% at 50% 50%,transparent 26%,rgba(0,0,0,.5) 86%,rgba(0,0,0,.78) 100%)}
+  /* keep the curve readable even when a photo is on the wall */
+  .hub.custom::before{background:linear-gradient(90deg,
+      rgba(0,0,0,.64) 0%,rgba(0,0,0,.18) 24%,rgba(255,255,255,.05) 50%,rgba(0,0,0,.18) 76%,rgba(0,0,0,.64) 100%)}
+  .hub.custom::after{background:radial-gradient(ellipse 88% 66% at 50% 50%,transparent 30%,rgba(0,0,0,.42) 88%,rgba(0,0,0,.68) 100%)}
+  /* the curved LEFT & RIGHT walls of the round room (reuse the two curve divs) */
+  .ceilCurve{display:block;position:absolute;z-index:2;pointer-events:none;top:-24%;bottom:-24%;left:-30%;width:56%;
+    border-radius:0 50% 50% 0/0 88% 88% 0;
+    background:linear-gradient(90deg,var(--wall2) 30%,transparent);
+    box-shadow:inset -9px 0 22px rgba(0,0,0,.42)}
+  .floorCurve{display:block;position:absolute;z-index:2;pointer-events:none;top:-24%;bottom:-24%;right:-30%;width:56%;
+    border-radius:50% 0 0 50%/88% 0 0 88%;
+    background:linear-gradient(270deg,var(--wall2) 30%,transparent);
+    box-shadow:inset 9px 0 22px rgba(0,0,0,.42)}
+  .glow{display:none}
+  .stage3d{position:absolute;left:50%;top:50%;transform-style:preserve-3d;z-index:4}
+  .card3d{position:absolute;width:166px;height:222px;left:-83px;top:-111px;border-radius:10px;overflow:hidden;background-size:cover;background-position:center;box-shadow:0 18px 42px rgba(0,0,0,.62),inset 0 0 0 1px rgba(255,255,255,.13);will-change:transform,opacity}
+  .card3d::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(125deg,rgba(255,255,255,.20),rgba(255,255,255,0) 36%,rgba(255,255,255,0) 72%,rgba(255,255,255,.07))}
+  .card3d video{width:100%;height:100%;object-fit:cover}
+  /* job name + count printed on each ring card */
+  .cardlabel{position:absolute;left:0;right:0;bottom:0;padding:20px 11px 9px;pointer-events:none;
+    background:linear-gradient(0deg,rgba(0,0,0,.80),rgba(0,0,0,.32) 55%,transparent)}
+  .cl-name{color:#fff;font-family:'Fraunces';font-size:14.5px;font-weight:600;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cl-count{color:rgba(255,255,255,.72);font-size:11px;margin-top:2px}
+  .vnav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.13);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:23px;line-height:1;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center}
+  .vnav.prev{left:12px}
+  .vnav.next{right:12px}
+  .vnav.hide{display:none}
+  /* in-app text input (replaces blocked browser prompts) */
+  .imodal{position:absolute;inset:0;z-index:95;background:rgba(8,6,4,.66);display:flex;align-items:center;justify-content:center;padding:26px;opacity:0;pointer-events:none;transition:.2s}
+  .imodal.open{opacity:1;pointer-events:auto}
+  .imodalcard{width:100%;max-width:320px;background:#1a130b;border:1px solid var(--line);border-radius:18px;padding:20px}
+  .imtitle{font-family:'Fraunces';font-size:18px;font-weight:600;color:var(--ink);margin-bottom:14px}
+  .imodalcard input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:14px 15px;border-radius:12px;font-size:16px;font-family:inherit;outline:none}
+  .imodalcard input:focus{border-color:var(--accent)}
+  .imbtns{display:flex;gap:10px;margin-top:16px}
+  .imbtn{flex:1;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
+  .imbtn.cancel{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .imbtn.ok{background:var(--accent);color:#2a1d08}
+  .roomctl{position:absolute;top:10px;right:10px;display:flex;gap:8px;z-index:5}
+  .icbtn{background:rgba(0,0,0,.5);border:1px solid var(--line);color:var(--ink);width:38px;height:38px;border-radius:11px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .icbtn.on{background:var(--accent);color:#2a1d08;border-color:var(--accent)}
+  .taphint{position:absolute;bottom:8px;left:0;right:0;text-align:center;color:rgba(246,239,225,.55);font-size:11px;pointer-events:none;z-index:4}
+  .nowplay{position:absolute;left:10px;top:54px;z-index:8;display:none;align-items:center;gap:8px;background:rgba(16,12,8,.92);border:1px solid var(--accent);border-radius:20px;padding:7px 12px;max-width:60%;cursor:pointer}
+  .nowplay.show{display:flex}
+  .nowplay #npname{color:var(--ink);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nowplay .npx{color:var(--muted);font-size:12px}
+  /* song picker sheet */
+  .msheet{position:absolute;inset:0;z-index:80;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;display:flex;align-items:flex-end}
+  .msheet.open{opacity:1;pointer-events:auto}
+  .msheetcard{width:100%;max-height:78%;background:#171109;border-radius:22px 22px 0 0;border-top:1px solid var(--line);transform:translateY(100%);transition:transform .28s;display:flex;flex-direction:column;overflow:hidden}
+  .msheet.open .msheetcard{transform:translateY(0)}
+  .mshead{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 8px}
+  .mstitle{font-family:'Fraunces';font-size:20px;font-weight:600;color:var(--ink)}
+  .msx{background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer}
+  .mssearch{margin:4px 18px 10px;background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:11px;padding:11px 14px;font-size:14px}
+  .mschips{display:flex;gap:8px;overflow-x:auto;padding:0 18px 10px;scrollbar-width:none}
+  .mschips::-webkit-scrollbar{display:none}
+  .mschip{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:20px;padding:7px 13px;font-size:13px;font-weight:600;white-space:nowrap}
+  .mschip.on{background:var(--accent);color:#2a1d08;border-color:var(--accent)}
+  .mslist{overflow-y:auto;padding:4px 12px 24px}
+  .mstrack{display:flex;align-items:center;gap:12px;padding:10px 10px;border-radius:13px;cursor:pointer}
+  .mstrack:active{background:var(--panel)}
+  .mstrack.on{background:var(--panel)}
+  .msart{width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--back2));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .msmeta{flex:1;min-width:0}
+  .msname{color:var(--ink);font-size:15px;font-weight:600}
+  .msartist{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .msadd{color:var(--accent);font-size:13px;font-weight:700;white-space:nowrap}
+
+  /* room picker */
+  .picker{padding:8px 14px 4px}
+  .picker .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 4px 7px;display:flex;justify-content:space-between}
+  .picker .lbl span{cursor:pointer}
+  .swatches{display:flex;gap:9px;overflow-x:auto;padding:2px 4px 4px;scrollbar-width:none}
+  .swatches::-webkit-scrollbar{display:none}
+  .sw{flex:0 0 auto;width:52px;text-align:center;cursor:pointer}
+  .sw .chip{width:52px;height:38px;border-radius:10px;border:2px solid transparent;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent)}
+  .sw.on .chip{border-color:#fff}
+  .sw .nm{font-size:9.5px;color:var(--muted);margin-top:4px;font-weight:500;white-space:nowrap}
+  .sw.on .nm{color:var(--ink)}
+  .walledit{display:flex;gap:8px;padding:9px 4px 2px}
+  .webtn{flex:1;border:1px dashed var(--line);background:transparent;color:var(--accent);border-radius:11px;padding:9px 4px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+  .webtn.set{border-style:solid;background:var(--panel)}
+
+  /* floor 3: projects */
+  .sectlbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;padding:14px 18px 8px}
+  .projrow{display:flex;gap:9px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none}
+  .projrow::-webkit-scrollbar{display:none}
+  .pchip{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:11px;padding:10px 15px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .pchip.on{background:var(--accent);color:#2a1d08;border-color:var(--accent)}
+  .pchip.add{color:var(--accent);border-style:dashed}
+
+  /* floor 4: contact + share */
+  .contactrow{display:flex;gap:9px;padding:14px 16px 4px}
+  .cbtn{flex:1;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:13px;padding:13px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+  .cbtn.wa{border-color:#2ea44f;color:#7fe0a0}
+  .sharerow{display:flex;gap:9px;padding:9px 16px 16px}
+  .sbtn{flex:1;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:13px;padding:12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+
+  .tabs{position:relative;z-index:20;height:60px;display:flex;background:rgba(12,9,6,.96);border-top:1px solid var(--line);flex-shrink:0}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer}
+  .tab.on{color:var(--accent)}
+  .tab .ic{font-size:18px}
+
+  /* gallery */
+  .galwrap{flex:1;overflow-y:auto}
+  .galhead{padding:18px 20px 2px}
+  .galhead .name{font-family:'Fraunces';font-size:21px;font-weight:600;color:var(--ink)}
+  .galhead .url{color:var(--accent);font-size:13px;margin-top:2px;font-family:'Fraunces'}
+  .ghint{padding:6px 20px 0;color:var(--muted);font-size:12px;line-height:1.4}
+  .ggrid{padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .gphoto{aspect-ratio:3/4;border-radius:13px;overflow:hidden;background:var(--panel);border:1px solid var(--line);position:relative}
+  .gphoto img,.gphoto video{width:100%;height:100%;object-fit:cover;display:block}
+  .gphoto.priv img,.gphoto.priv video{filter:brightness(.4)}
+  .gphoto .vtag{position:absolute;top:7px;right:7px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;padding:3px 7px;border-radius:10px;font-weight:600;pointer-events:none}
+  .pvtoggle{position:absolute;bottom:7px;left:7px;right:7px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:5px 8px;border-radius:9px;text-align:center;cursor:pointer;font-weight:600}
+  .moreadd{grid-column:span 2;border:1.5px dashed var(--line);background:transparent;color:var(--accent);border-radius:14px;padding:16px;text-align:center;font-weight:600;font-size:15px;cursor:pointer}
+  .startover{margin:4px 16px 20px;width:calc(100% - 32px);background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:13px;padding:13px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+
+  .toast{position:absolute;left:50%;bottom:74px;transform:translateX(-50%) translateY(20px);z-index:70;background:#241a0c;border:1px solid var(--accent);color:var(--ink);padding:11px 18px;border-radius:30px;font-size:13px;font-weight:500;opacity:0;transition:.3s;text-align:center;max-width:84%}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .viewer{position:absolute;inset:0;z-index:90;background:rgba(8,6,4,.97);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.25s;padding:18px}
+  .viewer.open{opacity:1;pointer-events:auto}
+  .viewerBody{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+  .viewerBody img,.viewerBody video{max-width:100%;max-height:86%;border-radius:14px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .viewer .vclose{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.14);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:17px;cursor:pointer;z-index:2}
+  .viewer .vcap{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:var(--muted);font-size:12px;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+  <input type="file" id="vidInput" accept="video/*" style="display:none">
+  <input type="file" id="bgInput" accept="image/*" style="display:none">
+  <input type="file" id="avInput" accept="image/*" style="display:none">
+
+  <!-- S0 name -->
+  <section class="screen active" id="s0">
+    <div class="pad" style="padding-top:54px">
+      <div style="font-family:Fraunces;font-weight:700;font-size:20px;color:var(--ink);margin-bottom:26px">Done<span style="color:var(--accent)">By</span></div>
+      <div class="eyebrow">Step 1 of 3</div>
+      <h1>What name goes<br>on your work?</h1>
+      <div class="sub">This becomes your link.</div>
+      <div class="field"><label>Your name or business</label>
+        <input type="text" id="nameInput" placeholder="e.g. Maria Cuts" autocomplete="off">
+        <div class="linkpreview" id="linkPrev">your page → <b>yourname.doneby.com</b></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="nav"><button class="btn" onclick="claimLink()">Next →</button></div>
+  </section>
+
+  <!-- S1 upload -->
+  <section class="screen" id="s1">
+    <div class="pad" style="padding-top:38px;padding-bottom:8px">
+      <div class="eyebrow">Step 2 of 3 · your real work</div>
+      <h1 style="font-size:23px">Add photos &amp;<br>a video clip</h1>
+      <div class="sub" style="margin-bottom:12px">Straight from your phone — into your spinning page.</div>
+      <button class="bigadd" onclick="pickPhotos()"><span class="ic">＋</span>Add photos from my phone<small>camera roll or camera</small></button>
+      <div class="miniadd" onclick="pickVideo()">🎬 <b>Add a video</b> — one short clip</div>
+      <div class="uploadgrid" id="grid"></div>
+      <div class="count"><span><b id="cnum">0</b>/10 photos · <b id="vnum">0</b>/1 video</span><span id="warn" style="color:var(--accent)"></span></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="nav"><button class="btn" id="buildBtn" disabled onclick="reveal()">Add work to continue</button></div>
+  </section>
+
+  <!-- S2 the house / showcase page -->
+  <section class="screen" id="s2">
+    <div class="page">
+      <!-- floor 1 -->
+      <div class="profilebar">
+        <div class="avatar" id="avatar" onclick="pickAvatar()">＋</div>
+        <div class="pinfo">
+          <div class="pname" id="pname">Maria Cuts</div>
+          <div class="pabout" id="pabout" onclick="editAbout()"><span class="edit">＋ Add what you do</span></div>
+        </div>
+        <div class="dbtag">Done<span>By</span></div>
+      </div>
+      <!-- floor 2: room -->
+      <div class="roomband">
+        <div class="hub" id="cylWall"></div>
+        <div class="ceilCurve"></div>
+        <div class="floorCurve"></div>
+        <div class="stage3d" id="stage3d"></div>
+        <div class="roomctl">
+          <button class="icbtn" id="musicBtn" onclick="event.stopPropagation();openMusic()">♪</button>
+          <button class="icbtn" onclick="event.stopPropagation();exportPiece()">⬆</button>
+        </div>
+        <div class="nowplay" id="nowplay" onclick="clearMusic()"><span id="npname">♪</span><span class="npx">✕</span></div>
+        <div class="taphint">drag to spin · tap a job to open its photos</div>
+      </div>
+      <div class="picker">
+        <div class="lbl"><span>Room color</span><span onclick="clearWall()" style="color:var(--muted)">× clear photo</span></div>
+        <div class="swatches" id="swatches"></div>
+        <div class="walledit">
+          <button class="webtn" id="wallBtn" onclick="setWall()">＋ Put my photo on the wall</button>
+        </div>
+      </div>
+      <!-- floor 3: projects -->
+      <div class="sectlbl">Jobs</div>
+      <div class="projrow" id="projrow"></div>
+      <!-- floor 4: contact + share -->
+      <div class="sectlbl">Get in touch</div>
+      <div class="contactrow">
+        <button class="cbtn wa" onclick="doWhatsApp()">🟢 WhatsApp</button>
+        <button class="cbtn" onclick="doCall()">📞 Call</button>
+      </div>
+      <div class="sharerow">
+        <button class="sbtn" onclick="doShare()">↗ Share page</button>
+        <button class="sbtn" onclick="copyLink()">🔗 Copy link</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab on" onclick="tab('show')"><span class="ic">✦</span>Showcase</div>
+      <div class="tab" onclick="tab('proj')"><span class="ic">▦</span>My Work</div>
+    </div>
+  </section>
+
+  <!-- S3 gallery -->
+  <section class="screen" id="s3">
+    <div class="galwrap">
+      <div class="galhead"><div class="name" id="galName">Maria Cuts</div><div class="url" id="galUrl">mariacuts.doneby.com</div></div>
+      <div class="ghint">Tap a photo to flip it <b>public</b> or <b>private</b>. Private stays off your spinning page.</div>
+      <div class="ggrid" id="ggrid"></div>
+      <button class="startover" onclick="restart()">↺ Start over</button>
+    </div>
+    <div class="tabs">
+      <div class="tab" onclick="tab('show')"><span class="ic">✦</span>Showcase</div>
+      <div class="tab on" onclick="tab('proj')"><span class="ic">▦</span>My Work</div>
+    </div>
+  </section>
+
+  <div class="viewer" id="viewer">
+    <button class="vclose" onclick="closeViewer()">✕</button>
+    <button class="vnav prev" id="vprev" onclick="jobPrev()">‹</button>
+    <div class="viewerBody" id="viewerBody"></div>
+    <button class="vnav next" id="vnext" onclick="jobNext()">›</button>
+    <div class="vcap" id="vcap">tap ✕ to close</div>
+  </div>
+
+  <div class="msheet" id="msheet">
+    <div class="msheetcard">
+      <div class="mshead"><div class="mstitle">Add music</div><button class="msx" onclick="closeMusic()">✕</button></div>
+      <div class="mssearch">🔎 Search songs &amp; artists</div>
+      <div class="mschips"><span class="mschip on">Trending</span><span class="mschip">Chill</span><span class="mschip">Upbeat</span><span class="mschip">Acoustic</span><span class="mschip">Hip hop</span></div>
+      <div class="mslist" id="mslist"></div>
+    </div>
+  </div>
+
+  <div class="imodal" id="imodal">
+    <div class="imodalcard">
+      <div class="imtitle" id="imtitle">Name this job</div>
+      <input type="text" id="iminput" placeholder="" autocomplete="off">
+      <div class="imbtns">
+        <button class="imbtn cancel" onclick="imClose()">Cancel</button>
+        <button class="imbtn ok" id="imok">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+  /* ===== state ===== */
+  let photos=[];                 // {src,type,pub,proj}
+  let userName='Maria Cuts', about='', avatar=null, wallImg=null;
+  let projects=['All Work'], activeProj='All Work';
+  let contact={wa:'',tel:''};
+  let curScreen='s0';
+  const MAX=10;
+
+  function save(){try{
+    const slim=photos.filter(p=>p.type==='img').map(p=>({src:p.src,type:p.type,pub:p.pub,proj:p.proj}));
+    localStorage.setItem('donebyHouse',JSON.stringify({photos:slim,name:userName,about,avatar,wall:wallImg,music,projects,activeProj,contact,screen:curScreen}));
+  }catch(e){}}
+  function go(id){curScreen=id;document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+    if(id==='s2'){renderProjChips();buildCarousel();}
+    if(id==='s3')renderGallery();
+    save();}
+  function tab(w){go(w==='show'?'s2':'s3');}
+  let tT;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2600);}
+
+  /* in-app text input that works inside the sandboxed preview (browser prompt() is blocked there) */
+  let _imCb=null;
+  function askText(title,placeholder,initial,cb){
+    document.getElementById('imtitle').textContent=title;
+    const inp=document.getElementById('iminput');inp.placeholder=placeholder||'';inp.value=initial||'';
+    _imCb=cb;document.getElementById('imodal').classList.add('open');
+    setTimeout(()=>inp.focus(),60);}
+  function imClose(){document.getElementById('imodal').classList.remove('open');_imCb=null;}
+  function imSubmit(){const v=document.getElementById('iminput').value.trim();const cb=_imCb;imClose();if(cb)cb(v);}
+  document.getElementById('imok').addEventListener('click',imSubmit);
+  document.getElementById('iminput').addEventListener('keydown',e=>{if(e.key==='Enter')imSubmit();});
+
+  /* ===== name + about + avatar ===== */
+  const nameInput=document.getElementById('nameInput');
+  const slug=s=>s.toLowerCase().replace(/[^a-z0-9]/g,'')||'yourname';
+  nameInput.addEventListener('input',()=>{document.getElementById('linkPrev').innerHTML='your page → <b>'+slug(nameInput.value)+'.doneby.com</b>';});
+  function claimLink(){userName=nameInput.value.trim()||'Maria Cuts';syncName();go('s1');}
+  function syncName(){const u=slug(userName)+'.doneby.com';
+    document.getElementById('pname').textContent=userName;
+    document.getElementById('galName').textContent=userName;document.getElementById('galUrl').textContent=u;}
+  function editAbout(){askText('What do you do?','Hair stylist · balayage · Princeton NJ',about,v=>{about=v;renderAbout();save();});}
+  function renderAbout(){const el=document.getElementById('pabout');
+    el.innerHTML=about?about:'<span class="edit">＋ Add what you do</span>';}
+  const avInput=document.getElementById('avInput');
+  function pickAvatar(){avInput.click();}
+  avInput.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;avatar=await compress(f,300);
+    document.getElementById('avatar').style.backgroundImage='url('+avatar+')';document.getElementById('avatar').textContent='';save();avInput.value='';});
+
+  /* ===== compress ===== */
+  function compress(file,maxOverride){return new Promise(res=>{const r=new FileReader();
+    r.onload=e=>{const img=new Image();img.onload=()=>{const max=maxOverride||900;let w=img.width,h=img.height;
+      if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+      res(cv.toDataURL('image/jpeg',0.8));};img.src=e.target.result;};r.readAsDataURL(file);});}
+
+  /* ===== uploads ===== */
+  const fileInput=document.getElementById('fileInput');
+  function pickPhotos(){fileInput.click();}
+  fileInput.addEventListener('change',async e=>{const files=[...e.target.files];if(!files.length)return;
+    const imgN=photos.filter(p=>p.type==='img').length;const room=MAX-imgN;
+    for(const f of files.slice(0,room>0?room:0)){const small=await compress(f);
+      photos.push({src:small,type:'img',pub:true,proj:activeProj});renderUploadGrid();save();}
+    buildCarousel();fileInput.value='';});
+  const vidInput=document.getElementById('vidInput');
+  function pickVideo(){vidInput.click();}
+  vidInput.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
+    if(photos.some(p=>p.type==='vid')){toast('One video on free');vidInput.value='';return;}
+    photos.push({src:URL.createObjectURL(f),type:'vid',pub:true,proj:activeProj});
+    renderUploadGrid();buildCarousel();vidInput.value='';toast('Video added');});
+  function renderUploadGrid(){const grid=document.getElementById('grid');grid.innerHTML='';
+    photos.forEach((p,i)=>{const c=document.createElement('div');c.className='cell';
+      const m=p.type==='vid'?'<video src="'+p.src+'" muted playsinline></video><div class="vbadge">▶ video</div>':'<img src="'+p.src+'">';
+      c.innerHTML=m+'<div class="del" onclick="delItem('+i+')">✕</div>';grid.appendChild(c);});
+    const imgN=photos.filter(p=>p.type==='img').length,vidN=photos.filter(p=>p.type==='vid').length;
+    document.getElementById('cnum').textContent=imgN;document.getElementById('vnum').textContent=vidN;
+    const b=document.getElementById('buildBtn');
+    if(photos.length){b.disabled=false;b.textContent='Build my spinning page →';b.classList.add('pulse');}
+    else{b.disabled=true;b.textContent='Add work to continue';b.classList.remove('pulse');}
+    document.getElementById('warn').textContent=imgN>=MAX?'Free full — Pro = 100':'';}
+  function delItem(i){photos.splice(i,1);renderUploadGrid();buildCarousel();save();}
+  function reveal(){if(photos.length){syncName();go('s2');}}
+
+  /* ===== carousel — true 3D ring inside the cylinder =====
+     Every photo is mounted on the ring at a fixed angle. We spin the whole
+     ring with rotateY and let the browser handle depth + overlap, so cards
+     travel smoothly around the circle instead of popping in front. */
+  const R=150,stage3d=document.getElementById('stage3d');let cards3d=[];let ringR=150;
+  let angle=0,frontIdx=0,vel=0,dragging=false;
+  function visiblePhotos(){return photos.filter(p=>p.pub);}
+  /* one card on the ring = one job. cover = that job's first public photo. */
+  function ringJobs(){return projects.filter(j=>photos.some(p=>p.pub&&p.proj===j));}
+  function jobPhotos(job){return photos.filter(p=>p.pub&&p.proj===job);}
+  function buildCarousel(){stage3d.innerHTML='';cards3d=[];
+    const jobs=ringJobs();const n=jobs.length||1;
+    /* grow the ring as jobs are added so each card keeps a fixed gap. */
+    const cardW=166,gap=50;
+    ringR=(n<2)?200:Math.max(190,(cardW+gap)/(2*Math.sin(Math.PI/n)));
+    for(let i=0;i<jobs.length;i++){const job=jobs[i];const pics=jobPhotos(job);const cover=pics[0];
+      const c=document.createElement('div');c.className='card3d';c.dataset.job=job;
+      if(cover&&cover.type==='vid'){const v=document.createElement('video');v.src=cover.src;
+        v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');c.appendChild(v);v.play().catch(()=>{});}
+      else if(cover)c.style.backgroundImage='url('+cover.src+')';
+      const lab=document.createElement('div');lab.className='cardlabel';
+      lab.innerHTML='<div class="cl-name">'+job+'</div><div class="cl-count">'+pics.length+' photo'+(pics.length===1?'':'s')+'</div>';
+      c.appendChild(lab);
+      const base=i*(360/n);c.dataset.base=base;        /* fixed seat on the ring */
+      c.style.transform='rotateY('+base+'deg) translateZ('+ringR+'px)';
+      stage3d.appendChild(c);cards3d.push(c);}}
+  function frame(){
+    if(!dragging&&Math.abs(vel)>0.02){angle+=vel;vel*=0.95;}
+    stage3d.style.transform='translateZ(-'+ringR+'px) rotateY('+angle+'deg)';   /* spin the ring */
+    let best=-2;
+    for(let i=0;i<cards3d.length;i++){const base=parseFloat(cards3d[i].dataset.base);
+      const facing=Math.cos((base+angle)*Math.PI/180);   /* 1 = front, -1 = back */
+      if(facing>best){best=facing;frontIdx=i;}
+      const t=(facing+1)/2;
+      cards3d[i].style.opacity=(0.15+t*0.85).toFixed(3);
+      cards3d[i].style.filter='brightness('+(0.5+t*0.6).toFixed(3)+')';}
+    requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+  /* drag to spin yourself; flick to coast; tap a photo to view big */
+  (function(){const band=document.querySelector('.roomband');let lastX=0,moved=0,downT=0,active=false;
+    function start(x){active=true;dragging=true;lastX=x;moved=0;downT=Date.now();vel=0;}
+    function move(x){if(!active)return;const dx=x-lastX;angle+=dx*0.45;vel=dx*0.45;moved+=Math.abs(dx);lastX=x;}
+    function end(){if(!active)return;active=false;dragging=false;if(moved<8&&Date.now()-downT<400)openViewer(frontIdx);}
+    band.addEventListener('touchstart',e=>{if(e.target.closest('.roomctl,.musicmenu'))return;start(e.touches[0].clientX);},{passive:true});
+    band.addEventListener('touchmove',e=>{move(e.touches[0].clientX);},{passive:true});
+    band.addEventListener('touchend',end);
+    band.addEventListener('mousedown',e=>{if(e.target.closest('.roomctl,.musicmenu'))return;start(e.clientX);});
+    window.addEventListener('mousemove',e=>{if(active)move(e.clientX);});
+    window.addEventListener('mouseup',end);
+  })();
+  /* tapping the front card opens that job's photos to swipe through */
+  let jvList=[],jvIdx=0,jvName='';
+  function openViewer(idx){const jobs=ringJobs();const job=jobs[idx];if(!job)return;
+    jvList=jobPhotos(job);jvIdx=0;jvName=job;if(!jvList.length)return;
+    renderJob();document.getElementById('viewer').classList.add('open');}
+  function renderJob(){const p=jvList[jvIdx];const body=document.getElementById('viewerBody');
+    body.innerHTML=p.type==='vid'?'<video src="'+p.src+'" controls autoplay playsinline></video>':'<img src="'+p.src+'">';
+    const many=jvList.length>1;
+    document.getElementById('vcap').textContent=jvName+'  ·  '+(jvIdx+1)+' / '+jvList.length+(many?'    ‹ swipe ›':'');
+    document.getElementById('vprev').classList.toggle('hide',!many);
+    document.getElementById('vnext').classList.toggle('hide',!many);}
+  function jobNext(){if(jvIdx<jvList.length-1){jvIdx++;renderJob();}}
+  function jobPrev(){if(jvIdx>0){jvIdx--;renderJob();}}
+  function closeViewer(){document.getElementById('viewer').classList.remove('open');document.getElementById('viewerBody').innerHTML='';}
+  /* close on backdrop tap; swipe left/right to move through the job */
+  (function(){const v=document.getElementById('viewer');let sx=0;
+    v.addEventListener('click',e=>{if(e.target===v)closeViewer();});
+    v.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+    v.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;
+      if(Math.abs(dx)>45){dx<0?jobNext():jobPrev();}},{passive:true});
+  })();
+
+  /* ===== projects (jobs) ===== */
+  function spinToJob(job){const jobs=ringJobs();const idx=jobs.indexOf(job);if(idx<0)return;
+    const n=jobs.length||1;angle=-(idx*(360/n));vel=0;}   /* front when base+angle=0 */
+  function renderProjChips(){const row=document.getElementById('projrow');row.innerHTML='';
+    projects.forEach(p=>{const c=document.createElement('div');c.className='pchip'+(p===activeProj?' on':'');
+      c.textContent=p;c.onclick=()=>{activeProj=p;renderProjChips();spinToJob(p);save();};row.appendChild(c);});
+    const add=document.createElement('div');add.className='pchip add';add.textContent='+ New job';
+    add.onclick=()=>{askText('Name this job','e.g. Kitchen Tile','',nm=>{if(!nm)return;
+      projects.push(nm);activeProj=nm;renderProjChips();save();
+      toast('Now add photos for '+nm);go('s1');renderUploadGrid();});};row.appendChild(add);}
+
+  /* ===== custom room bg + themes ===== */
+  const bgInput=document.getElementById('bgInput');
+  function setWall(){bgInput.click();}
+  bgInput.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;
+    wallImg=await compress(f);applyWall();save();toast('Photo set on the wall');bgInput.value='';});
+  function clearWall(){wallImg=null;applyWall();save();toast('Wall photo cleared');}
+  function applyWall(){const w=document.getElementById('cylWall');if(!w)return;
+    if(wallImg){w.style.backgroundImage='url('+wallImg+')';w.classList.add('custom');}
+    else{w.style.backgroundImage='';w.classList.remove('custom');}
+    const b=document.getElementById('wallBtn');if(b)b.classList.toggle('set',!!wallImg);}
+  const THEMES=[
+    {name:'Graphite',chip:'linear-gradient(135deg,#4a5158,#1c2024)',v:{'--amb1':'#3a3f44','--amb2':'#14171a','--floor1':'#41474d','--floor2':'#23272b','--grid':'#4a5158','--wall1':'#3c4248','--wall2':'#1c2024','--back1':'#34393e','--back2':'#181b1e','--glow':'rgba(185,195,205,.26)','--accent':'#c9ccd0'}},
+    {name:'Silver',chip:'linear-gradient(135deg,#c2c6cb,#8d9297)',v:{'--amb1':'#aeb3b8','--amb2':'#62676c','--floor1':'#b4b9be','--floor2':'#898e93','--grid':'#a6abb0','--wall1':'#c2c6cb','--wall2':'#8d9297','--back1':'#cdd1d5','--back2':'#9a9fa4','--glow':'rgba(230,235,240,.4)','--accent':'#5c6166'}},
+    {name:'Copper',chip:'linear-gradient(135deg,#a06849,#3e261a)',v:{'--amb1':'#8a563a','--amb2':'#3a2316','--floor1':'#9c6347','--floor2':'#523322','--grid':'#7d4e36','--wall1':'#a06849','--wall2':'#4f3120','--back1':'#8c5a3e','--back2':'#3e261a','--glow':'rgba(212,140,98,.32)','--accent':'#c47a4e'}},
+    {name:'Turquoise',chip:'linear-gradient(135deg,#43837d,#1c3b38)',v:{'--amb1':'#3a726d','--amb2':'#142c2a','--floor1':'#418079','--floor2':'#1e3d3a','--grid':'#356660','--wall1':'#43837d','--wall2':'#1c3b38','--back1':'#3a726d','--back2':'#173331','--glow':'rgba(120,200,190,.30)','--accent':'#5fb8ad'}},
+    {name:'Champagne',chip:'linear-gradient(135deg,#c0a978,#7a6843)',v:{'--amb1':'#b09969','--amb2':'#5f5034','--floor1':'#bda874','--floor2':'#6e5d3c','--grid':'#9c8757','--wall1':'#c0a978','--wall2':'#7a6843','--back1':'#b29a6a','--back2':'#5a4c32','--glow':'rgba(225,205,150,.38)','--accent':'#9a814c'}},
+    {name:'Bronze',chip:'linear-gradient(135deg,#7e5e3e,#2f2214)',v:{'--amb1':'#6e5234','--amb2':'#2a1e12','--floor1':'#7c5c3c','--floor2':'#3e2e1c','--grid':'#634a30','--wall1':'#7e5e3e','--wall2':'#3c2c1a','--back1':'#6e5234','--back2':'#2f2214','--glow':'rgba(190,150,100,.30)','--accent':'#b88a52'}},
+    {name:'Onyx',chip:'linear-gradient(135deg,#2b2e33,#0a0b0d)',v:{'--amb1':'#23262b','--amb2':'#0a0b0d','--floor1':'#2b2e33','--floor2':'#15171a','--grid':'#34383e','--wall1':'#1f2226','--wall2':'#0c0d0f','--back1':'#26292e','--back2':'#101113','--glow':'rgba(170,180,195,.22)','--accent':'#aab0b8'}},
+  ];
+  const root=document.documentElement,sw=document.getElementById('swatches');
+  function setTheme(t,el){for(const k in t.v)root.style.setProperty(k,t.v[k]);
+    [...sw.children].forEach(c=>c.classList.remove('on'));el.classList.add('on');applyWall();save();}
+  THEMES.forEach((t,i)=>{const d=document.createElement('div');d.className='sw'+(i===0?' on':'');d.innerHTML='<div class="chip" style="background:'+t.chip+'"></div><div class="nm">'+t.name+'</div>';d.onclick=()=>setTheme(t,d);sw.appendChild(d);});
+
+  /* ===== music — Facebook-style song picker ===== */
+  let music=null;
+  const TRACKS=[
+    {t:'Golden Hour',a:'Soft Pop',d:'0:30',art:'🌅'},
+    {t:'City Lights',a:'Lo-Fi Beats',d:'0:28',art:'🌃'},
+    {t:'Sunday Morning',a:'Acoustic',d:'0:32',art:'☕'},
+    {t:'Move It',a:'Upbeat Dance',d:'0:27',art:'💃'},
+    {t:'Smooth Sail',a:'R&B Chill',d:'0:31',art:'🌊'},
+    {t:'Fresh Cut',a:'Hip Hop',d:'0:29',art:'🎧'},
+    {t:'Bloom',a:'Indie Pop',d:'0:33',art:'🌸'},
+    {t:'Night Drive',a:'Synthwave',d:'0:30',art:'🚗'},
+    {t:'Little Joy',a:'Ukulele',d:'0:26',art:'🌼'},
+    {t:'Deep Focus',a:'Ambient',d:'0:35',art:'🌙'}
+  ];
+  function openMusic(){renderTracks();document.getElementById('msheet').classList.add('open');}
+  function closeMusic(){document.getElementById('msheet').classList.remove('open');}
+  function renderTracks(){const l=document.getElementById('mslist');l.innerHTML='';
+    TRACKS.forEach((tr,i)=>{const row=document.createElement('div');row.className='mstrack'+(music&&music.t===tr.t?' on':'');
+      row.innerHTML='<div class="msart">'+tr.art+'</div><div class="msmeta"><div class="msname">'+tr.t+'</div><div class="msartist">'+tr.a+' · '+tr.d+'</div></div><div class="msadd">'+(music&&music.t===tr.t?'✓':'+ Add')+'</div>';
+      row.onclick=()=>selectTrack(i);l.appendChild(row);});}
+  function selectTrack(i){music=TRACKS[i];showNowPlay();closeMusic();save();
+    document.getElementById('musicBtn').classList.add('on');toast('Added: '+music.t);}
+  function clearMusic(){music=null;hideNowPlay();save();document.getElementById('musicBtn').classList.remove('on');toast('Music removed');}
+  function showNowPlay(){const np=document.getElementById('nowplay');if(!np||!music)return;
+    document.getElementById('npname').textContent='♪ '+music.t+' — '+music.a;np.classList.add('show');}
+  function hideNowPlay(){const np=document.getElementById('nowplay');if(np)np.classList.remove('show');}
+
+  /* ===== export watermark ===== */
+  function exportPiece(){const pic=photos.find(p=>p.pub&&p.type==='img');if(!pic){toast('Add a photo to export');return;}
+    const img=new Image();img.onload=()=>{const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
+      const pad=Math.round(cv.width*0.03),fs=Math.round(cv.width*0.045);ctx.font='600 '+fs+'px Inter,sans-serif';ctx.textBaseline='bottom';
+      const label=userName+'  ·  doneby.com',tw=ctx.measureText(label).width;ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(pad-8,cv.height-pad-fs-8,tw+16,fs+14);
+      ctx.fillStyle='#f6efe1';ctx.fillText(label,pad,cv.height-pad);
+      const a=document.createElement('a');a.download='doneby-'+slug(userName)+'.jpg';a.href=cv.toDataURL('image/jpeg',0.9);a.click();toast('Exported with your watermark');};img.src=pic.src;}
+
+  /* ===== contact + share ===== */
+  function doWhatsApp(){if(!contact.wa){askText('Your WhatsApp number','country code, e.g. 19175551234','',n=>{n=n.replace(/[^0-9]/g,'');if(n){contact.wa=n;save();toast('WhatsApp saved — tap again to open');}});return;}
+    window.open('https://wa.me/'+contact.wa,'_blank');}
+  function doCall(){if(!contact.tel){askText('Your phone number','e.g. 6095551234','',n=>{n=n.trim();if(n){contact.tel=n;save();toast('Number saved — tap again to call');}});return;}
+    window.location.href='tel:'+contact.tel;}
+  function doShare(){const url='https://'+slug(userName)+'.doneby.com';
+    if(navigator.share){navigator.share({title:userName,text:'See my work',url:url}).catch(()=>{});}
+    else{copyLink();}}
+  function copyLink(){const url='https://'+slug(userName)+'.doneby.com';
+    if(navigator.clipboard)navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>toast(url));else toast(url);}
+
+  /* ===== gallery ===== */
+  function renderGallery(){const g=document.getElementById('ggrid');g.innerHTML='';
+    photos.forEach((p,i)=>{const d=document.createElement('div');d.className='gphoto'+(p.pub?'':' priv');
+      const m=p.type==='vid'?'<video src="'+p.src+'" muted playsinline controls preload="metadata"></video><div class="vtag">▶ play</div>':'<img src="'+p.src+'">';
+      d.innerHTML=m+'<div class="pvtoggle" onclick="togglePV('+i+')">'+(p.pub?'👁 Public':'🔒 Private')+'</div>';g.appendChild(d);});
+    const add=document.createElement('div');add.className='moreadd';add.textContent='+ Add more photos';add.onclick=()=>{go('s1');renderUploadGrid();};g.appendChild(add);}
+  function togglePV(i){photos[i].pub=!photos[i].pub;renderGallery();buildCarousel();save();toast(photos[i].pub?'Now public':'Now private — hidden from spin');}
+
+  /* ===== restart + restore ===== */
+  function restart(){photos=[];wallImg=null;avatar=null;about='';projects=['All Work'];activeProj='All Work';contact={wa:'',tel:''};userName='Maria Cuts';
+    try{localStorage.removeItem('donebyHouse');}catch(e){}clearMusic();
+    document.getElementById('avatar').style.backgroundImage='';document.getElementById('avatar').textContent='＋';
+    applyWall();renderAbout();renderUploadGrid();buildCarousel();nameInput.value='';go('s0');}
+  (function restore(){let s;try{s=JSON.parse(localStorage.getItem('donebyHouse'));}catch(e){}
+    if(s&&s.photos&&s.photos.length){photos=s.photos;userName=s.name||'Maria Cuts';about=s.about||'';avatar=s.avatar||null;wallImg=s.wall||null;
+      projects=s.projects||['All Work'];activeProj=s.activeProj||'All Work';contact=s.contact||{wa:'',tel:''};music=s.music||null;if(music){showNowPlay();document.getElementById('musicBtn').classList.add('on');}
+      syncName();renderAbout();nameInput.value=userName==='Maria Cuts'?'':userName;
+      if(avatar){const a=document.getElementById('avatar');a.style.backgroundImage='url('+avatar+')';a.textContent='';}
+      applyWall();renderUploadGrid();renderProjChips();buildCarousel();go(s.screen&&s.screen!=='s0'?s.screen:'s1');}
+    else{renderUploadGrid();renderAbout();}})();
+</script>
+</body>
+</html>
