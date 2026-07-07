@@ -28,7 +28,7 @@
     font-weight:600;margin:18px 0 6px}
 
   /* stage */
-  .stageWrap{position:relative;height:min(58vh,470px);perspective:1200px;margin:6px 0 4px;
+  .stageWrap{position:relative;height:360px;perspective:1100px;margin:6px 0 10px;
     display:flex;align-items:center;justify-content:center}
   .stage{position:absolute;left:50%;top:50%;transform-style:preserve-3d;will-change:transform}
   .card{position:absolute;width:var(--cw,236px);height:var(--ch,320px);left:calc(var(--cw,236px)/-2);top:calc(var(--ch,320px)/-2);border-radius:16px;
@@ -234,7 +234,7 @@
     photos=[];build();save();toast('All cleared');
   }
 
-  function sizeCards(){const w=Math.min(window.innerWidth,520);const cw=Math.round(w*0.62);const ch=Math.round(cw*1.35);document.documentElement.style.setProperty('--cw',cw+'px');document.documentElement.style.setProperty('--ch',ch+'px');window._cw=cw;}
+  function sizeCards(){const w=Math.min(window.innerWidth,460);const cw=Math.min(210,Math.round(w*0.5));const ch=Math.round(cw*1.35);document.documentElement.style.setProperty('--cw',cw+'px');document.documentElement.style.setProperty('--ch',ch+'px');window._cw=cw;}
   sizeCards();window.addEventListener('resize',()=>{sizeCards();build();});
   load();build();requestAnimationFrame(frame);
 </script>
