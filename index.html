@@ -197,6 +197,7 @@
   .gphoto{aspect-ratio:3/4;border-radius:13px;overflow:hidden;background:var(--panel);border:1px solid var(--line);position:relative}
   .gphoto img,.gphoto video{width:100%;height:100%;object-fit:cover;display:block}
   .gphoto.priv img,.gphoto.priv video{filter:brightness(.4)}
+  .gphoto .delx{position:absolute;top:7px;left:7px;background:rgba(200,40,40,.9);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;z-index:3}
   .gphoto .vtag{position:absolute;top:7px;right:7px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;padding:3px 7px;border-radius:10px;font-weight:600;pointer-events:none}
   .pvtoggle{position:absolute;bottom:7px;left:7px;right:7px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:5px 8px;border-radius:9px;text-align:center;cursor:pointer;font-weight:600}
   .moreadd{grid-column:span 2;border:1.5px dashed var(--line);background:transparent;color:var(--accent);border-radius:14px;padding:16px;text-align:center;font-weight:600;font-size:15px;cursor:pointer}
@@ -506,7 +507,7 @@
     const n=jobs.length||1;angle=-(idx*(360/n));vel=0;}   /* front when base+angle=0 */
   function renderProjChips(){const row=document.getElementById('projrow');row.innerHTML='';
     projects.forEach(p=>{const c=document.createElement('div');c.className='pchip'+(p===activeProj?' on':'');
-      c.textContent=p;c.onclick=()=>{activeProj=p;renderProjChips();spinToJob(p);save();};row.appendChild(c);});
+      c.textContent=p;c.onclick=()=>{activeProj=p;renderProjChips();spinToJob(p);save();};let lp;c.addEventListener('touchstart',()=>{lp=setTimeout(()=>delProject(p),600)});c.addEventListener('touchend',()=>clearTimeout(lp));c.addEventListener('mousedown',()=>{lp=setTimeout(()=>delProject(p),600)});c.addEventListener('mouseup',()=>clearTimeout(lp));row.appendChild(c);});
     const add=document.createElement('div');add.className='pchip add';add.textContent='+ New job';
     add.onclick=()=>{askText('Name this job','e.g. Kitchen Tile','',nm=>{if(!nm)return;
       projects.push(nm);activeProj=nm;renderProjChips();save();
@@ -586,9 +587,11 @@
   function renderGallery(){const g=document.getElementById('ggrid');g.innerHTML='';
     photos.forEach((p,i)=>{const d=document.createElement('div');d.className='gphoto'+(p.pub?'':' priv');
       const m=p.type==='vid'?'<video src="'+p.src+'" muted playsinline controls preload="metadata"></video><div class="vtag">▶ play</div>':'<img src="'+p.src+'">';
-      d.innerHTML=m+'<div class="pvtoggle" onclick="togglePV('+i+')">'+(p.pub?'👁 Public':'🔒 Private')+'</div>';g.appendChild(d);});
+      d.innerHTML=m+'<div class="delx" onclick="delGalleryPhoto('+i+')">\u2715</div>'+'<div class="pvtoggle" onclick="togglePV('+i+')">'+(p.pub?'👁 Public':'🔒 Private')+'</div>';g.appendChild(d);});
     const add=document.createElement('div');add.className='moreadd';add.textContent='+ Add more photos';add.onclick=()=>{go('s1');renderUploadGrid();};g.appendChild(add);}
   function togglePV(i){photos[i].pub=!photos[i].pub;renderGallery();buildCarousel();save();toast(photos[i].pub?'Now public':'Now private — hidden from spin');}
+  function delGalleryPhoto(i){ if(!confirm('Delete this photo?'))return; photos.splice(i,1); renderGallery(); buildCarousel(); save(); toast('Photo deleted'); }
+  function delProject(name){ if(name==='All Work'){toast('Can\'t delete All Work');return;} if(!confirm('Delete project "'+name+'" and its photos?'))return; photos=photos.filter(p=>p.proj!==name); projects=projects.filter(x=>x!==name); if(activeProj===name)activeProj='All Work'; renderProjChips(); buildCarousel(); renderGallery&&renderGallery(); save(); toast('Project deleted'); }
 
   /* ===== restart + restore ===== */
   function restart(){photos=[];wallImg=null;avatar=null;about='';projects=['All Work'];activeProj='All Work';contact={wa:'',tel:''};userName='Maria Cuts';
