@@ -4,18 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>DoneBy</title>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#211714; --bg2:#2b1e19; --card:#2f221c;
+    --bg:#2a1f19; --bg2:#352720; --card:#3a2b23;
     --gold:#d8b06a; --gold-soft:#c9a24b;
     --ink:#f2ebe0; --muted:#9c8b7d; --line:rgba(216,176,106,.22);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
-  body{background:radial-gradient(120% 80% at 50% 0%,#2c1f19 0%,var(--bg) 60%)}
+  body{background:radial-gradient(120% 80% at 50% 0%,#3a2b23 0%,var(--bg) 60%)}
   .wrap{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:22px 20px 40px}
 
   /* header */
@@ -27,10 +28,10 @@
     font-weight:600;margin:18px 0 6px}
 
   /* stage */
-  .stageWrap{position:relative;height:440px;perspective:1200px;margin:6px 0 4px;
+  .stageWrap{position:relative;height:min(58vh,470px);perspective:1200px;margin:6px 0 4px;
     display:flex;align-items:center;justify-content:center}
   .stage{position:absolute;left:50%;top:50%;transform-style:preserve-3d;will-change:transform}
-  .card{position:absolute;width:236px;height:320px;left:-118px;top:-160px;border-radius:16px;
+  .card{position:absolute;width:var(--cw,236px);height:var(--ch,320px);left:calc(var(--cw,236px)/-2);top:calc(var(--ch,320px)/-2);border-radius:16px;
     overflow:hidden;background:#3a2b23 center/cover no-repeat;
     box-shadow:0 26px 50px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.10);
     will-change:transform,opacity}
@@ -101,7 +102,7 @@
   <div class="note">Photos are saved right here on your device — close it, come back, they're still here. Nothing is uploaded anywhere.</div>
 </div>
 
-<input id="file" type="file" accept="image/*,video/*" multiple hidden>
+<input id="file" type="file" accept="image/*,.heic,.heif,video/*" multiple hidden>
 
 <div class="viewer" id="viewer">
   <button class="x" onclick="closeViewer()">✕</button>
@@ -133,14 +134,19 @@
     const files=[...e.target.files];
     files.forEach(f=>{
       if(photos.length>=MAX){toast('Photo limit reached');return;}
-      if(f.type.startsWith('video')){photos.push({src:URL.createObjectURL(f),type:'vid'});}
-      else{
+      if(f.type.startsWith('video')){photos.push({src:URL.createObjectURL(f),type:'vid'});build();save();return;}
+      const isHeic = /heic|heif/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
+      if(isHeic && window.heic2any){
+        toast('Converting photo…');
+        heic2any({blob:f,toType:'image/jpeg',quality:0.85})
+          .then(out=>{const r=new FileReader();r.onload=ev=>shrink(ev.target.result,small=>{photos.push({src:small,type:'img'});build();save();});r.readAsDataURL(out);})
+          .catch(()=>toast('Could not read that photo'));
+      } else {
         const r=new FileReader();
         r.onload=ev=>{shrink(ev.target.result,small=>{photos.push({src:small,type:'img'});build();save();});};
         r.readAsDataURL(f);
       }
     });
-    setTimeout(()=>{build();save();},100);
     e.target.value='';
   });
 
@@ -148,7 +154,7 @@
   function shrink(dataURL,cb){
     const img=new Image();
     img.onload=()=>{
-      const max=900;let{width:w,height:h}=img;
+      const max=1200;let{width:w,height:h}=img;
       if(w>max||h>max){const s=Math.min(max/w,max/h);w*=s;h*=s;}
       const cv=document.createElement('canvas');cv.width=w;cv.height=h;
       cv.getContext('2d').drawImage(img,0,0,w,h);
@@ -165,7 +171,7 @@
     document.getElementById('hint').style.display=n?'block':'none';
     document.getElementById('subline').textContent = n? 'Tap a photo to see it big · drag to spin' : 'Add photos and they spin here';
     if(!n)return;
-    ringR = n<2 ? 300 : Math.max(260,(236+70)/(2*Math.sin(Math.PI/n)));
+    ringR = n<2 ? (window._cw||236)*1.3 : Math.max((window._cw||236)*1.0,((window._cw||236)+24)/(2*Math.sin(Math.PI/n)));
     photos.forEach((p,i)=>{
       const c=document.createElement('div');c.className='card';c.dataset.i=i;
       if(p.type==='vid'){const v=document.createElement('video');v.src=p.src;v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');c.appendChild(v);v.play().catch(()=>{});}
@@ -185,8 +191,8 @@
       const base=parseFloat(c.dataset.base);
       let d=((base+angle)%360+360)%360; if(d>180)d=360-d;   // 0 = front
       const t=1-Math.min(d,120)/120;
-      c.style.opacity=(0.35+0.65*t).toFixed(3);
-      c.style.filter='brightness('+(0.6+0.4*t).toFixed(3)+')';
+      c.style.opacity=(0.62+0.38*t).toFixed(3);
+      c.style.filter='brightness('+(1.0+0.18*t).toFixed(3)+') contrast('+(1.02+0.06*t).toFixed(3)+') saturate('+(1.05+0.1*t).toFixed(3)+')';
       const sc=0.82+0.18*t;
       c.style.transform='rotateY('+base+'deg) translateZ('+ringR+'px) scale('+sc.toFixed(3)+')';
       c.style.zIndex=Math.round(t*100);
@@ -228,6 +234,8 @@
     photos=[];build();save();toast('All cleared');
   }
 
+  function sizeCards(){const w=Math.min(window.innerWidth,520);const cw=Math.round(w*0.62);const ch=Math.round(cw*1.35);document.documentElement.style.setProperty('--cw',cw+'px');document.documentElement.style.setProperty('--ch',ch+'px');window._cw=cw;}
+  sizeCards();window.addEventListener('resize',()=>{sizeCards();build();});
   load();build();requestAnimationFrame(frame);
 </script>
 </body>
