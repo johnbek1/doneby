@@ -117,8 +117,15 @@
 
   function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
   function fmtDate(ts){return new Date(ts).toLocaleDateString(undefined,{month:'short',year:'numeric'});}
-  function save(){try{localStorage.setItem('donebyProjects',JSON.stringify(projects));}catch(e){toast('Storage full — remove a project');}}
-  function load(){try{const s=JSON.parse(localStorage.getItem('donebyProjects'));if(Array.isArray(s))projects=s;}catch(e){}}
+  // ---- IndexedDB storage (photos + short videos persist) ----
+  let _db=null;
+  function idb(){return new Promise((res,rej)=>{if(_db)return res(_db);const r=indexedDB.open('donebyDB',1);
+    r.onupgradeneeded=e=>{e.target.result.createObjectStore('kv');};
+    r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e);});}
+  async function idbSet(k,v){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=e=>rej(e);});}
+  async function idbGet(k){const db=await idb();return new Promise((res)=>{const t=db.transaction('kv','readonly');const rq=t.objectStore('kv').get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>res(null);});}
+  async function save(){try{await idbSet('projects',JSON.parse(JSON.stringify(projects)));}catch(e){toast('Could not save');}}
+  async function load(){try{const s=await idbGet('projects');if(Array.isArray(s))projects=s;}catch(e){}}
 
   function sizeCards(){const w=Math.min(window.innerWidth,460);const cw=Math.min(210,Math.round(w*0.5));const ch=Math.round(cw*1.35);
     document.documentElement.style.setProperty('--cw',cw+'px');document.documentElement.style.setProperty('--ch',ch+'px');window._cw=cw;}
@@ -140,7 +147,10 @@
     const files=[...e.target.files]; const idx=targetIdx; if(idx<0||!projects[idx]){e.target.value='';return;}
     files.forEach(f=>{
       if(projects[idx].photos.length>=MAXPHOTOS){toast('Photo limit for this project');return;}
-      if(f.type.startsWith('video')){projects[idx].photos.push({src:URL.createObjectURL(f),type:'vid'});build();save();return;}
+      if(f.type.startsWith('video')){
+        if(f.size>15*1024*1024){toast('Video too big — keep it short (under ~15s)');return;}
+        const r=new FileReader();r.onload=ev=>{projects[idx].photos.push({src:ev.target.result,type:'vid'});build();save();if(openIdx===idx)renderViewer();};r.readAsDataURL(f);return;
+      }
       const isHeic=/heic|heif/i.test(f.type)||/\.hei[cf]$/i.test(f.name);
       if(isHeic&&window.heic2any){toast('Converting photo…');
         heic2any({blob:f,toType:'image/jpeg',quality:0.85}).then(out=>{const r=new FileReader();r.onload=ev=>shrink(ev.target.result,s=>{projects[idx].photos.push({src:s,type:'img'});build();save();if(openIdx===idx)renderViewer();});r.readAsDataURL(out);}).catch(()=>toast('Could not read that photo'));
@@ -255,7 +265,7 @@
   function clearAll(){if(!projects.length)return;if(!confirm('Remove ALL projects?'))return;projects=[];save();build();toast('All cleared');}
 
   sizeCards();window.addEventListener('resize',()=>{sizeCards();build();});
-  load();build();requestAnimationFrame(frame);
+  load().then(()=>{build();});requestAnimationFrame(frame);
 </script>
 </body>
 </html>
