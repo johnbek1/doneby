@@ -13,7 +13,36 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
-  body{background:radial-gradient(120% 80% at 50% 0%,#3a2b23 0%,var(--bg) 60%)}
+  body{background:#3a2a1f}
+  /* faux 3D room: back wall + floor + ambient light */
+  .room{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+    perspective:900px;perspective-origin:50% 42%}
+  .box{position:absolute;inset:0;transform-style:preserve-3d}
+  .face{position:absolute;background:#4a382b}
+  /* back wall */
+  .back{left:15%;right:15%;top:14%;bottom:26%;transform:translateZ(-420px);
+    background:radial-gradient(120% 100% at 50% 20%,rgba(240,208,140,.42),transparent 65%),linear-gradient(#5a4634,#3e2f22);
+    box-shadow:inset 0 0 120px rgba(0,0,0,.55)}
+  .back::before{content:"";position:absolute;inset:0;opacity:.45;
+    background:repeating-linear-gradient(90deg,rgba(0,0,0,.20) 0 3px,transparent 3px 18px)}
+  /* floor */
+  .floor{left:-20%;right:-20%;bottom:0;height:80%;transform-origin:bottom;
+    transform:rotateX(84deg) translateZ(-140px);
+    background:linear-gradient(#4a3826,#2c2016)}
+  /* ceiling */
+  .ceil{left:-20%;right:-20%;top:0;height:70%;transform-origin:top;
+    transform:rotateX(-84deg) translateZ(-120px);
+    background:linear-gradient(#2c2016,#4a3826)}
+  /* left + right walls */
+  .lwall{left:0;top:-20%;bottom:-20%;width:60%;transform-origin:left;
+    transform:rotateY(78deg) translateZ(60px);
+    background:linear-gradient(90deg,#463526,#2a1e14)}
+  .rwall{right:0;top:-20%;bottom:-20%;width:60%;transform-origin:right;
+    transform:rotateY(-78deg) translateZ(60px);
+    background:linear-gradient(-90deg,#463526,#2a1e14)}
+  .glow{position:absolute;left:50%;top:34%;width:70%;height:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(closest-side,rgba(240,210,150,.42),transparent);filter:blur(44px)}
+  .wrap{position:relative;z-index:1}
   .wrap{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:22px 20px 40px}
   .top{display:flex;justify-content:space-between;align-items:center}
   .logo{font-family:'Fraunces',serif;font-size:26px;font-weight:600}
@@ -21,7 +50,8 @@
   .count{font-size:13px;color:var(--muted)}
   .eyebrow{text-align:center;color:var(--gold);font-size:12px;letter-spacing:4px;font-weight:600;margin:18px 0 6px}
 
-  .stageWrap{position:relative;height:360px;perspective:1100px;margin:6px 0 10px;display:flex;align-items:center;justify-content:center}
+  .stageWrap{position:relative;height:min(62vh,460px);perspective:1200px;margin:6px 0 10px;display:flex;align-items:center;justify-content:center}
+  .stageWrap::after{content:'';position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:60%;height:24px;background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent);filter:blur(6px)}
   .stage{position:absolute;left:50%;top:50%;transform-style:preserve-3d;will-change:transform}
   .card{position:absolute;width:var(--cw,210px);height:var(--ch,284px);left:calc(var(--cw,210px)/-2);top:calc(var(--ch,284px)/-2);
     border-radius:16px;overflow:hidden;background:#3a2b23 center/cover no-repeat;
@@ -66,6 +96,7 @@
 </style>
 </head>
 <body>
+<div class="room"><div class="box"><div class="face back"></div><div class="face floor"></div><div class="face ceil"></div><div class="face lwall"></div><div class="face rwall"></div></div><div class="glow"></div></div>
 <div class="wrap">
   <div class="top">
     <div class="logo">Done<b>By</b></div>
