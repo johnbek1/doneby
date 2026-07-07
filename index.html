@@ -98,7 +98,7 @@
     box-shadow:inset 9px 0 22px rgba(0,0,0,.42)}
   .glow{display:none}
   .stage3d{position:absolute;left:50%;top:50%;transform-style:preserve-3d;z-index:4}
-  .card3d{position:absolute;width:166px;height:222px;left:-83px;top:-111px;border-radius:10px;overflow:hidden;background-size:cover;background-position:center;box-shadow:0 18px 42px rgba(0,0,0,.62),inset 0 0 0 1px rgba(255,255,255,.13);will-change:transform,opacity}
+  .card3d{position:absolute;width:230px;height:310px;left:-115px;top:-155px;border-radius:10px;overflow:hidden;background-size:cover;background-position:center;box-shadow:0 18px 42px rgba(0,0,0,.62),inset 0 0 0 1px rgba(255,255,255,.13);will-change:transform,opacity}
   .card3d::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(125deg,rgba(255,255,255,.20),rgba(255,255,255,0) 36%,rgba(255,255,255,0) 72%,rgba(255,255,255,.07))}
   .card3d video{width:100%;height:100%;object-fit:cover}
   /* job name + count printed on each ring card */
@@ -442,7 +442,7 @@
   function buildCarousel(){stage3d.innerHTML='';cards3d=[];
     const jobs=ringJobs();const n=jobs.length||1;
     /* grow the ring as jobs are added so each card keeps a fixed gap. */
-    const cardW=166,gap=50;
+    const cardW=230,gap=60;
     ringR=(n<2)?200:Math.max(190,(cardW+gap)/(2*Math.sin(Math.PI/n)));
     for(let i=0;i<jobs.length;i++){const job=jobs[i];const pics=jobPhotos(job);const cover=pics[0];
       const c=document.createElement('div');c.className='card3d';c.dataset.job=job;
