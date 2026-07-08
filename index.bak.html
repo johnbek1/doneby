@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>DoneBy</title>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#2a1f19; --card:#3a2b23; --gold:#d8b06a; --gold-soft:#c9a24b;
+    --ink:#f2ebe0; --muted:#9c8b7d; --line:rgba(216,176,106,.22); }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+  body{background:#3a2a1f}
+  /* faux 3D room: back wall + floor + ambient light */
+  .room{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+    perspective:900px;perspective-origin:50% 42%}
+  .box{position:absolute;inset:0;transform-style:preserve-3d}
+  .face{position:absolute;background:#4a382b}
+  /* back wall */
+  .back{left:15%;right:15%;top:14%;bottom:26%;transform:translateZ(-420px);
+    background:radial-gradient(120% 100% at 50% 20%,rgba(240,208,140,.42),transparent 65%),linear-gradient(#5a4634,#3e2f22);
+    box-shadow:inset 0 0 120px rgba(0,0,0,.55)}
+  .back::before{content:"";position:absolute;inset:0;opacity:.45;
+    background:repeating-linear-gradient(90deg,rgba(0,0,0,.20) 0 3px,transparent 3px 18px)}
+  /* floor */
+  .floor{left:-20%;right:-20%;bottom:0;height:80%;transform-origin:bottom;
+    transform:rotateX(84deg) translateZ(-140px);
+    background:linear-gradient(#4a3826,#2c2016)}
+  /* ceiling */
+  .ceil{left:-20%;right:-20%;top:0;height:70%;transform-origin:top;
+    transform:rotateX(-84deg) translateZ(-120px);
+    background:linear-gradient(#2c2016,#4a3826)}
+  /* left + right walls */
+  .lwall{left:0;top:-20%;bottom:-20%;width:60%;transform-origin:left;
+    transform:rotateY(78deg) translateZ(60px);
+    background:linear-gradient(90deg,#463526,#2a1e14)}
+  .rwall{right:0;top:-20%;bottom:-20%;width:60%;transform-origin:right;
+    transform:rotateY(-78deg) translateZ(60px);
+    background:linear-gradient(-90deg,#463526,#2a1e14)}
+  .glow{position:absolute;left:50%;top:34%;width:70%;height:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(closest-side,rgba(240,210,150,.42),transparent);filter:blur(44px)}
+  .wrap{position:relative;z-index:1}
+  .wrap{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:22px 20px 40px}
+  .top{display:flex;justify-content:space-between;align-items:center}
+  .logo{font-family:'Fraunces',serif;font-size:26px;font-weight:600}
+  .logo b{color:var(--gold)}
+  .count{font-size:13px;color:var(--muted)}
+  .eyebrow{text-align:center;color:var(--gold);font-size:12px;letter-spacing:4px;font-weight:600;margin:18px 0 6px}
+
+  .stageWrap{position:relative;height:min(62vh,460px);perspective:1200px;margin:6px 0 10px;display:flex;align-items:center;justify-content:center}
+  .stageWrap::after{content:'';position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:60%;height:24px;background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent);filter:blur(6px)}
+  .stage{position:absolute;left:50%;top:50%;transform-style:preserve-3d;will-change:transform}
+  .card{position:absolute;width:var(--cw,210px);height:var(--ch,284px);left:calc(var(--cw,210px)/-2);top:calc(var(--ch,284px)/-2);
+    border-radius:16px;overflow:hidden;background:#3a2b23 center/cover no-repeat;
+    box-shadow:0 26px 50px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.10);will-change:transform,opacity}
+  .card .label{position:absolute;left:0;right:0;bottom:0;padding:14px 14px 12px;
+    background:linear-gradient(transparent,rgba(0,0,0,.78));}
+  .card .label .nm{font-family:'Fraunces',serif;font-size:18px;font-weight:600;line-height:1.15}
+  .card .label .mt{font-size:12px;color:#e6d9c4;opacity:.9;margin-top:2px}
+  .taphint{position:absolute;bottom:-2px;left:0;right:0;text-align:center;color:var(--muted);font-size:13px}
+
+  .title{font-family:'Fraunces',serif;font-size:34px;font-weight:600;text-align:center;margin:8px 0 4px}
+  .sub{text-align:center;color:var(--muted);font-size:15px;margin-bottom:20px}
+
+  .btns{display:flex;gap:12px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+  .btn{border:none;font-family:inherit;font-size:16px;font-weight:600;padding:14px 24px;border-radius:40px;cursor:pointer}
+  .btn.gold{background:linear-gradient(180deg,var(--gold),var(--gold-soft));color:#2a1c12;box-shadow:0 10px 26px rgba(216,176,106,.28)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .note{text-align:center;color:var(--muted);font-size:13px;line-height:1.6;max-width:380px;margin:0 auto}
+
+  .empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--muted)}
+  .empty .ring{width:110px;height:110px;border-radius:20px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--gold)}
+
+  /* gallery viewer */
+  .viewer{position:fixed;inset:0;background:rgba(28,18,11,.62);backdrop-filter:blur(3px);display:none;flex-direction:column;z-index:50}
+  .viewer.open{display:flex}
+  .vhead{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;color:var(--ink)}
+  .vhead .vt{font-family:'Fraunces',serif;font-size:20px}
+  .vhead .vt small{display:block;font-family:'Inter';font-size:12px;color:var(--muted)}
+  .vhead button{background:rgba(255,255,255,.14);color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;margin-left:8px}
+  .vstage{flex:1;position:relative;perspective:1100px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .vring{position:absolute;left:50%;top:50%;transform-style:preserve-3d;will-change:transform}
+  .vcard{position:absolute;width:var(--cw,210px);height:var(--ch,284px);left:calc(var(--cw,210px)/-2);top:calc(var(--ch,284px)/-2);
+    border-radius:16px;overflow:hidden;background:#3a2b23 center/cover no-repeat;
+    box-shadow:0 26px 50px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.10);will-change:transform,opacity}
+  .vcard .delp{position:absolute;top:8px;right:8px;background:rgba(200,50,50,.9);color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;z-index:3}
+  .vhint{position:absolute;bottom:6px;left:0;right:0;text-align:center;color:var(--muted);font-size:13px}
+  .vfoot{display:flex;gap:12px;justify-content:center;padding:14px 18px 26px}
+  .vfoot .btn{padding:13px 22px;font-size:15px}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#3a2b23;color:var(--ink);border:1px solid var(--line);padding:12px 20px;border-radius:30px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="room"><div class="box"><div class="face back"></div><div class="face floor"></div><div class="face ceil"></div><div class="face lwall"></div><div class="face rwall"></div></div><div class="glow"></div></div>
+<div class="wrap">
+  <div class="top">
+    <div class="logo">Done<b>By</b></div>
+    <div class="count"><span id="pcount">0</span> projects</div>
+  </div>
+  <div class="eyebrow">MY PORTFOLIO</div>
+
+  <div class="stageWrap">
+    <div class="stage" id="stage"></div>
+    <div class="empty" id="empty"><div class="ring">＋</div><div>Add your first project</div></div>
+    <div class="taphint" id="hint" style="display:none">tap a project to open · drag to spin</div>
+  </div>
+
+  <div class="title">My work</div>
+  <div class="sub" id="subline">Each project shows as one card</div>
+
+  <div class="btns">
+    <button class="btn gold" onclick="newProject()">＋ New project</button>
+    <button class="btn ghost" onclick="clearAll()">Clear all</button>
+  </div>
+  <div class="note">Photos are saved right here on your device. Nothing is uploaded anywhere. Group each job into its own project, then share it.</div>
+</div>
+
+<input id="file" type="file" accept="image/*,.heic,.heif,video/*" multiple hidden>
+
+<div class="viewer" id="viewer">
+  <div class="vhead">
+    <div class="vt" id="vtitle">Project<small id="vmeta"></small></div>
+    <div>
+      <button onclick="addToOpenProject()" title="Add photos">＋</button>
+      <button onclick="shareProject()" title="Share">⤴</button>
+      <button onclick="closeViewer()">✕</button>
+    </div>
+  </div>
+  <div class="vstage" id="vstage"></div>
+  <div class="vfoot">
+    <button class="btn ghost" onclick="delOpenProject()">Delete project</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // projects: [{id,name,date,photos:[{src,type}]}]
+  let projects=[], openIdx=-1, targetIdx=-1;
+  let angle=0, vel=0, dragging=false, lastX=0, ringR=280, moved=false;
+  const stage=document.getElementById('stage');
+  const MAXP=20, MAXPHOTOS=30;
+
+  function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
+  function fmtDate(ts){return new Date(ts).toLocaleDateString(undefined,{month:'short',year:'numeric'});}
+  // ---- IndexedDB storage (photos + short videos persist) ----
+  let _db=null;
+  function idb(){return new Promise((res,rej)=>{if(_db)return res(_db);const r=indexedDB.open('donebyDB',1);
+    r.onupgradeneeded=e=>{e.target.result.createObjectStore('kv');};
+    r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e);});}
+  async function idbSet(k,v){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=e=>rej(e);});}
+  async function idbGet(k){const db=await idb();return new Promise((res)=>{const t=db.transaction('kv','readonly');const rq=t.objectStore('kv').get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>res(null);});}
+  async function save(){try{await idbSet('projects',JSON.parse(JSON.stringify(projects)));}catch(e){toast('Could not save');}}
+  async function load(){try{const s=await idbGet('projects');if(Array.isArray(s))projects=s;}catch(e){}}
+
+  function sizeCards(){const w=Math.min(window.innerWidth,460);const cw=Math.min(210,Math.round(w*0.5));const ch=Math.round(cw*1.35);
+    document.documentElement.style.setProperty('--cw',cw+'px');document.documentElement.style.setProperty('--ch',ch+'px');window._cw=cw;}
+
+  function newProject(){
+    const name=prompt('Project name (e.g. Kitchen Remodel):');
+    if(!name||!name.trim())return;
+    if(projects.length>=MAXP){toast('Project limit reached');return;}
+    const proj={id:Date.now(),name:name.trim(),date:Date.now(),photos:[]};
+    projects.unshift(proj);save();build();
+    targetIdx=0;  // add photos to the new one
+    pickFor(0);
+  }
+
+  function pickFor(i){targetIdx=i;document.getElementById('file').click();}
+  function addToOpenProject(){pickFor(openIdx);}
+
+  document.getElementById('file').addEventListener('change',e=>{
+    const files=[...e.target.files]; const idx=targetIdx; if(idx<0||!projects[idx]){e.target.value='';return;}
+    files.forEach(f=>{
+      if(projects[idx].photos.length>=MAXPHOTOS){toast('Photo limit for this project');return;}
+      if(f.type.startsWith('video')){
+        if(f.size>15*1024*1024){toast('Video too big — keep it short (under ~15s)');return;}
+        const r=new FileReader();r.onload=ev=>{projects[idx].photos.push({src:ev.target.result,type:'vid'});build();save();if(openIdx===idx)renderViewer();};r.readAsDataURL(f);return;
+      }
+      const isHeic=/heic|heif/i.test(f.type)||/\.hei[cf]$/i.test(f.name);
+      if(isHeic&&window.heic2any){toast('Converting photo…');
+        heic2any({blob:f,toType:'image/jpeg',quality:0.85}).then(out=>{const r=new FileReader();r.onload=ev=>shrink(ev.target.result,s=>{projects[idx].photos.push({src:s,type:'img'});build();save();if(openIdx===idx)renderViewer();});r.readAsDataURL(out);}).catch(()=>toast('Could not read that photo'));
+      } else {const r=new FileReader();r.onload=ev=>shrink(ev.target.result,s=>{projects[idx].photos.push({src:s,type:'img'});build();save();if(openIdx===idx)renderViewer();});r.readAsDataURL(f);}
+    });
+    e.target.value='';
+  });
+
+  function shrink(dataURL,cb){const img=new Image();img.onload=()=>{const max=1200;let{width:w,height:h}=img;if(w>max||h>max){const s=Math.min(max/w,max/h);w*=s;h*=s;}const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);cb(cv.toDataURL('image/jpeg',0.85));};img.src=dataURL;}
+
+  function build(){
+    stage.innerHTML='';const n=projects.length;
+    document.getElementById('pcount').textContent=n;
+    document.getElementById('empty').style.display=n?'none':'flex';
+    document.getElementById('hint').style.display=n?'block':'none';
+    document.getElementById('subline').textContent=n?'Tap a project to open · drag to spin':'Each project shows as one card';
+    if(!n)return;
+    const cw=window._cw||210;
+    ringR=n<2?cw*1.3:Math.max(cw*1.0,(cw+24)/(2*Math.sin(Math.PI/n)));
+    projects.forEach((p,i)=>{
+      const c=document.createElement('div');c.className='card';c.dataset.i=i;
+      const cover=p.photos[0];
+      if(cover){if(cover.type==='vid'){const v=document.createElement('video');v.src=cover.src;v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');v.style.cssText='width:100%;height:100%;object-fit:cover';c.appendChild(v);v.play().catch(()=>{});}else c.style.backgroundImage='url('+cover.src+')';}
+      const lb=document.createElement('div');lb.className='label';
+      lb.innerHTML='<div class="nm">'+escapeHtml(p.name)+'</div><div class="mt">'+fmtDate(p.date)+' · '+p.photos.length+' photo'+(p.photos.length!==1?'s':'')+'</div>';
+      c.appendChild(lb);
+      const base=i*(360/n);c.dataset.base=base;
+      c.addEventListener('click',()=>{if(!moved)openViewer(i);});
+      stage.appendChild(c);
+    });
+  }
+  function escapeHtml(s){return s.replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+  function frame(){
+    if(!dragging&&Math.abs(vel)>0.02){angle+=vel;vel*=0.94;}
+    [...stage.children].forEach(c=>{const base=parseFloat(c.dataset.base);let d=((base+angle)%360+360)%360;if(d>180)d=360-d;const t=1-Math.min(d,120)/120;
+      c.style.opacity=(0.62+0.38*t).toFixed(3);
+      c.style.filter='brightness('+(1.0+0.15*t).toFixed(3)+') contrast('+(1.02+0.05*t).toFixed(3)+') saturate('+(1.05+0.08*t).toFixed(3)+')';
+      const sc=0.84+0.16*t;c.style.transform='rotateY('+base+'deg) translateZ('+ringR+'px) scale('+sc.toFixed(3)+')';c.style.zIndex=Math.round(t*100);});
+    stage.style.transform='translateZ(-'+ringR+'px) rotateY('+angle+'deg)';
+    requestAnimationFrame(frame);
+  }
+
+  function down(x){dragging=true;lastX=x;vel=0;moved=false;}
+  function move(x){if(!dragging)return;const dx=x-lastX;lastX=x;if(Math.abs(dx)>2)moved=true;const d=dx*0.4;angle+=d;vel=d;}
+  function up(){dragging=false;}
+  const sw=document.querySelector('.stageWrap');
+  sw.addEventListener('mousedown',e=>down(e.clientX));window.addEventListener('mousemove',e=>move(e.clientX));window.addEventListener('mouseup',up);
+  sw.addEventListener('touchstart',e=>down(e.touches[0].clientX),{passive:true});sw.addEventListener('touchmove',e=>move(e.touches[0].clientX),{passive:true});sw.addEventListener('touchend',up);
+  const vst=document.getElementById('vstage');
+  vst.addEventListener('mousedown',e=>vdown(e.clientX));window.addEventListener('mousemove',e=>vmove(e.clientX));window.addEventListener('mouseup',vup);
+  vst.addEventListener('touchstart',e=>vdown(e.touches[0].clientX),{passive:true});vst.addEventListener('touchmove',e=>vmove(e.touches[0].clientX),{passive:true});vst.addEventListener('touchend',vup);
+  requestAnimationFrame(vframe);
+
+  let vAngle=0,vVel=0,vDrag=false,vLastX=0,vRingR=280,vMoved=false;
+  function openViewer(i){openIdx=i;renderViewer();document.getElementById('viewer').classList.add('open');}
+  function renderViewer(){
+    const p=projects[openIdx];if(!p)return;
+    document.getElementById('vtitle').childNodes[0].nodeValue=p.name;
+    document.getElementById('vmeta').textContent=fmtDate(p.date)+' · '+p.photos.length+' photo'+(p.photos.length!==1?'s':'');
+    const vs=document.getElementById('vstage');vs.innerHTML='';
+    if(!p.photos.length){vs.innerHTML='<div style="color:#9c8b7d">No photos yet — tap ＋ to add</div>';return;}
+    const ring=document.createElement('div');ring.className='vring';ring.id='vring';vs.appendChild(ring);
+    const hint=document.createElement('div');hint.className='vhint';hint.textContent='drag to spin · tap a photo';vs.appendChild(hint);
+    const cw=window._cw||210;const n=p.photos.length;
+    vRingR=n<2?cw*1.3:Math.max(cw*1.0,(cw+24)/(2*Math.sin(Math.PI/n)));
+    vAngle=0;vVel=0;
+    p.photos.forEach((ph,j)=>{const c=document.createElement('div');c.className='vcard';
+      if(ph.type==='vid'){const v=document.createElement('video');v.src=ph.src;v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');v.style.cssText='width:100%;height:100%;object-fit:cover';c.appendChild(v);v.play().catch(()=>{});}
+      else c.style.backgroundImage='url('+ph.src+')';
+      c.dataset.base=j*(360/n);
+      c.innerHTML+='<button class="delp" onclick="event.stopPropagation();delPhoto('+j+')">✕</button>';
+      c.addEventListener('click',()=>{if(!vMoved)bigPhoto(ph);});
+      ring.appendChild(c);});
+  }
+  function vframe(){
+    const ring=document.getElementById('vring');
+    if(ring&&document.getElementById('viewer').classList.contains('open')){
+      if(!vDrag&&Math.abs(vVel)>0.02){vAngle+=vVel;vVel*=0.94;}
+      [...ring.children].forEach(c=>{const base=parseFloat(c.dataset.base);let d=((base+vAngle)%360+360)%360;if(d>180)d=360-d;const t=1-Math.min(d,120)/120;
+        c.style.opacity=(0.6+0.4*t).toFixed(3);c.style.filter='brightness('+(1.0+0.15*t).toFixed(3)+')';
+        const sc=0.84+0.16*t;c.style.transform='rotateY('+base+'deg) translateZ('+vRingR+'px) scale('+sc.toFixed(3)+')';c.style.zIndex=Math.round(t*100);});
+      ring.style.transform='translateZ(-'+vRingR+'px) rotateY('+vAngle+'deg)';
+    }
+    requestAnimationFrame(vframe);
+  }
+  function vdown(x){vDrag=true;vLastX=x;vVel=0;vMoved=false;}
+  function vmove(x){if(!vDrag)return;const dx=x-vLastX;vLastX=x;if(Math.abs(dx)>2)vMoved=true;const d=dx*0.4;vAngle+=d;vVel=d;}
+  function vup(){vDrag=false;}
+  function bigPhoto(ph){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(10,7,5,.97);display:flex;align-items:center;justify-content:center;z-index:80;padding:14px';
+    o.innerHTML=(ph.type==='vid'?'<video src="'+ph.src+'" controls autoplay playsinline style="max-width:100%;max-height:100%">':'<img src="'+ph.src+'" style="max-width:100%;max-height:100%;border-radius:12px">');
+    o.onclick=()=>o.remove();document.body.appendChild(o);}
+  function closeViewer(){document.getElementById('viewer').classList.remove('open');openIdx=-1;}
+  function delPhoto(j){if(!confirm('Delete this photo?'))return;projects[openIdx].photos.splice(j,1);save();build();renderViewer();toast('Photo deleted');}
+  function delOpenProject(){const p=projects[openIdx];if(!p)return;if(!confirm('Delete project "'+p.name+'"?'))return;projects.splice(openIdx,1);save();closeViewer();build();toast('Project deleted');}
+
+  async function shareProject(){
+    const p=projects[openIdx];if(!p)return;
+    const text=p.name+' · '+fmtDate(p.date)+' — my work on DoneBy';
+    // try sharing the cover photo as a file (best for Instagram/TikTok)
+    try{
+      if(p.photos[0]&&p.photos[0].type==='img'&&navigator.canShare){
+        const blob=await (await fetch(p.photos[0].src)).blob();
+        const file=new File([blob],'doneby.jpg',{type:'image/jpeg'});
+        if(navigator.canShare({files:[file]})){await navigator.share({files:[file],text});return;}
+      }
+      if(navigator.share){await navigator.share({title:'DoneBy',text,url:location.href});return;}
+    }catch(e){}
+    toast('Sharing not supported here — take a screenshot');
+  }
+
+  function clearAll(){if(!projects.length)return;if(!confirm('Remove ALL projects?'))return;projects=[];save();build();toast('All cleared');}
+
+  sizeCards();window.addEventListener('resize',()=>{sizeCards();build();});
+  load().then(()=>{build();});requestAnimationFrame(frame);
+</script>
+</body>
+</html>
