@@ -332,7 +332,7 @@
   SURF.forEach(([k])=>roomCfg.surf[k]={color:DEF[k],bg:null});
   let selSurf='back';
 
-  function elFor(k){return document.querySelector('.'+k);}
+  function elFor(k){var map={left:'lwall',right:'rwall'};return document.querySelector('.'+(map[k]||k));}
   function applyRoom(){
     SURF.forEach(([k])=>{
       const el=elFor(k);if(!el)return;const c=roomCfg.surf[k];
