@@ -16,11 +16,11 @@
   body{background:#3a2a1f}
   /* faux 3D room: back wall + floor + ambient light */
   .room{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
-    perspective:760px;perspective-origin:50% 44%}
+    perspective:1000px;perspective-origin:50% 46%}
   .box{position:absolute;inset:0;transform-style:preserve-3d}
   .face{position:absolute;background:#4a382b}
   /* back wall */
-  .back{left:20%;right:20%;top:12%;bottom:22%;transform:translateZ(-560px);
+  .back{inset:0;transform:translateZ(-520px);
     background:radial-gradient(120% 100% at 50% 20%,rgba(240,208,140,.42),transparent 65%),linear-gradient(#5a4634,#3e2f22);
     box-shadow:inset 0 0 120px rgba(0,0,0,.55)}
   .back::before{content:"";position:absolute;inset:0;opacity:.55;pointer-events:none;
@@ -28,22 +28,21 @@
   .back::after{content:"";position:absolute;left:0;right:0;top:52%;height:3px;pointer-events:none;
     background:linear-gradient(90deg,transparent,rgba(255,214,150,.9),transparent);box-shadow:0 0 18px 4px rgba(255,200,130,.55)}
   /* floor */
-  .floor{left:-25%;right:-25%;bottom:0;height:95%;transform-origin:bottom;
-    transform:rotateX(86deg) translateZ(-170px);
+  .floor{left:0;right:0;bottom:0;height:520px;transform-origin:center bottom;
+    transform:rotateX(90deg);
     background:linear-gradient(#4a3826,#2c2016)}
   /* ceiling */
-  .ceil{left:-25%;right:-25%;top:0;height:52%;transform-origin:top;
-    transform:rotateX(-80deg) translateZ(-40px);
+  .ceil{left:0;right:0;top:0;height:520px;transform-origin:center top;
+    transform:rotateX(-90deg);
     background:linear-gradient(#2c2016,#4a3826)}
   /* left + right walls */
   .lwall::before,.rwall::before{content:"";position:absolute;inset:0;opacity:.35;pointer-events:none;
     background:repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 2px,transparent 2px 16px)}
-  .lwall{left:0;top:-25%;bottom:-25%;width:70%;transform-origin:left;
-    transform:rotateY(82deg) translateZ(80px);
+  .lwall{left:0;top:0;bottom:0;width:520px;transform-origin:left center;
+    transform:rotateY(90deg);
     background:linear-gradient(90deg,#463526,#2a1e14)}
-  .rwall{right:0;top:-25%;bottom:-25%;width:70%;transform-origin:right;
-    transform:rotateY(-82deg) translateZ(80px);
-    overflow:hidden;
+  .rwall{right:0;top:0;bottom:0;width:520px;transform-origin:right center;
+    transform:rotateY(-90deg);
     background:linear-gradient(-90deg,#463526,#2a1e14)}
   .glow{position:absolute;left:50%;top:34%;width:70%;height:50%;transform:translate(-50%,-50%);
     background:radial-gradient(closest-side,rgba(240,210,150,.42),transparent);filter:blur(44px)}
