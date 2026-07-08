@@ -23,7 +23,11 @@
   .back{inset:0;transform:translateZ(-520px);
     background:radial-gradient(120% 100% at 50% 20%,rgba(240,208,140,.42),transparent 65%),linear-gradient(#5a4634,#3e2f22);
     box-shadow:inset 0 0 120px rgba(0,0,0,.55)}
-  .arch{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:72%;height:82%;
+  .back,.lwall,.rwall{visibility:hidden}
+  .curve{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
+  .curve .seg{position:absolute;left:50%;top:0;bottom:0;width:80px;margin-left:-40px;
+    backface-visibility:hidden;background-repeat:no-repeat}
+  .arch{display:none;position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:72%;height:82%;
     border-radius:46% 46% 0 0 / 30% 30% 0 0;pointer-events:none;
     background:linear-gradient(rgba(255,255,255,.05),rgba(0,0,0,.16));
     box-shadow:inset 0 0 0 1px rgba(220,192,138,.30),inset 0 0 90px rgba(0,0,0,.35),0 0 60px rgba(220,192,138,.10)}
@@ -66,7 +70,7 @@
     font-family:'Fraunces',serif;overflow:hidden;background-size:cover;background-position:center}
   .proName{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.1}
   .proTrade{font-size:12.5px;color:var(--gold);letter-spacing:.4px}
-  .leadRow{display:flex;gap:10px;justify-content:center;margin:2px 0 14px}
+  .leadRow{display:flex;gap:12px;justify-content:center;margin:6px 0 12px;flex-wrap:wrap}
   .leadBtn{background:linear-gradient(180deg,var(--gold),var(--gold-soft));color:#2a1c12;border:none;border-radius:40px;
     padding:13px 22px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 10px 26px rgba(216,176,106,.30)}
   .leadBtn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:600}
@@ -85,7 +89,18 @@
   .card .label .mt{font-size:12px;color:#e6d9c4;opacity:.9;margin-top:2px}
   .taphint{position:absolute;bottom:-2px;left:0;right:0;text-align:center;color:var(--muted);font-size:13px}
 
-  .title{font-family:'Fraunces',serif;font-size:36px;font-weight:600;letter-spacing:-.4px;text-align:center;margin:8px 0 4px;text-shadow:0 2px 20px rgba(0,0,0,.35)}
+  .stagePanel{position:relative;margin:-26px -20px 0;padding:30px 22px 34px;
+    background:linear-gradient(180deg,rgba(32,24,17,.90),rgba(23,16,11,.96));
+    border-top:1px solid rgba(220,192,138,.38);
+    border-radius:26px 26px 0 0;
+    box-shadow:0 -24px 50px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.05);
+    backdrop-filter:blur(8px);text-align:center}
+  .stagePanel::before{content:"";position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:56px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.85}
+  .stagePanel .btns,.stagePanel .leadRow{gap:12px;margin-bottom:14px}
+  .stagePanel .btn,.stagePanel .leadBtn{min-width:172px}
+  .stagePanel .note{margin-bottom:16px}
+  .title{font-family:'Fraunces',serif;font-size:40px;font-weight:600;letter-spacing:-.5px;text-align:center;margin:6px 0 2px;text-shadow:0 2px 24px rgba(0,0,0,.45)}
   .sub{text-align:center;color:var(--muted);font-size:15px;margin-bottom:20px}
 
   .btns{display:flex;gap:12px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
@@ -130,7 +145,7 @@
 </style>
 </head>
 <body>
-<div class="room"><div class="box"><div class="face back"><div class="arch"></div></div><div class="face floor"></div><div class="face ceil"></div><div class="face lwall"></div><div class="face rwall"></div></div><div class="glow"></div><div class="vign"></div></div>
+<div class="room"><div class="box"><div class="face back"></div><div class="face floor"></div><div class="face ceil"></div><div class="face lwall"></div><div class="face rwall"></div></div><div class="glow"></div><div class="vign"></div></div>
 <div class="wrap">
   <div class="top">
     <div class="pro" onclick="editPro()" title="Tap to edit your name & trade">
@@ -150,6 +165,7 @@
     <div class="taphint" id="hint" style="display:none">tap a project to open · drag to spin</div>
   </div>
 
+  <div class="stagePanel">
   <div class="title">My work</div>
   <div class="sub" id="subline">Each project shows as one card</div>
 
@@ -176,6 +192,7 @@
       <button class="rc-btn ghost" onclick="resetRoom()">Reset all</button>
     </div>
   </div>
+  </div><!-- /stagePanel -->
 </div>
 
 <input id="file" type="file" accept="image/*,.heic,.heif,video/*" multiple hidden>
@@ -392,11 +409,31 @@
   let selSurf='back';
 
   function elFor(k){var map={left:'lwall',right:'rwall'};return document.querySelector('.'+(map[k]||k));}
+  // continuous curved wall: right corner -> back -> left corner
+  const CN=21, CR=520, CSTEP=8; let curveZones={left:[],back:[],right:[]};
+  function buildCurve(){
+    const box=document.querySelector('.box');if(!box)return;
+    const c=document.createElement('div');c.className='curve';
+    for(let i=0;i<CN;i++){const g=document.createElement('div');g.className='seg';
+      const th=(i-(CN-1)/2)*CSTEP;
+      g.style.transform='rotateY('+th+'deg) translateZ(-'+CR+'px)';
+      const zone=i<7?'left':(i<14?'back':'right');
+      curveZones[zone].push(g);
+      c.appendChild(g);}
+    box.appendChild(c);
+  }
+  function paintZone(zone,c){
+    const segs=curveZones[zone];const n=segs.length;
+    segs.forEach((g,j)=>{
+      if(c.bg){g.style.backgroundImage='url('+c.bg+')';g.style.backgroundSize=(n*100)+'% 100%';g.style.backgroundPosition=(j*100/(n-1))+'% center';g.style.backgroundColor='';}
+      else{g.style.backgroundImage='none';g.style.background="radial-gradient(140% 120% at 50% 30%,rgba(240,208,140,.14),transparent 60%),linear-gradient("+lighten(c.color,12)+","+c.color+")";}
+    });
+  }
   function applyRoom(){
     SURF.forEach(([k])=>{
       const el=elFor(k);if(!el)return;const c=roomCfg.surf[k];
-      if(c.bg){el.style.background="url("+c.bg+") center/cover no-repeat";}
-      else if(k==='back'){el.style.background="radial-gradient(120% 100% at 50% 20%,rgba(240,208,140,.30),transparent 65%),linear-gradient("+lighten(c.color,18)+","+c.color+")";}
+      if(k==='back'||k==='left'||k==='right'){paintZone(k,c);}
+      else if(c.bg){el.style.background="url("+c.bg+") center/cover no-repeat";}
       else{el.style.background="linear-gradient("+lighten(c.color,10)+","+darken(c.color,22)+")";}
     });
     const b=(roomCfg.bright/100).toFixed(2);
@@ -432,7 +469,7 @@
   async function loadRoom(){try{const r=await idbGet('room2');if(r&&r.surf)roomCfg=r;}catch(e){}buildSurfTabs();applyRoom();}
 
   sizeCards();window.addEventListener('resize',()=>{sizeCards();build();});
-  load().then(()=>{build();});loadRoom();loadPro();requestAnimationFrame(frame);
+  buildCurve();load().then(()=>{build();});loadRoom();loadPro();requestAnimationFrame(frame);
 </script>
 </body>
 </html>
