@@ -32,8 +32,8 @@
     transform:rotateX(86deg) translateZ(-170px);
     background:linear-gradient(#4a3826,#2c2016)}
   /* ceiling */
-  .ceil{left:-25%;right:-25%;top:0;height:34%;transform-origin:top;
-    transform:rotateX(-86deg) translateZ(-150px);
+  .ceil{left:-25%;right:-25%;top:0;height:52%;transform-origin:top;
+    transform:rotateX(-80deg) translateZ(-40px);
     background:linear-gradient(#2c2016,#4a3826)}
   /* left + right walls */
   .lwall::before,.rwall::before{content:"";position:absolute;inset:0;opacity:.35;pointer-events:none;
@@ -50,9 +50,19 @@
   .wrap{position:relative;z-index:1}
   .wrap{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:22px 20px 40px}
   .top{display:flex;justify-content:space-between;align-items:center}
-  .logo{font-family:'Fraunces',serif;font-size:26px;font-weight:600}
-  .logo b{color:var(--gold)}
-  .count{font-size:13px;color:var(--muted)}
+  .count{font-size:12px;color:var(--muted);margin-top:2px}
+  .brand{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--muted)}
+  .brand b{color:var(--gold)}
+  .pro{display:flex;align-items:center;gap:12px;cursor:pointer}
+  .avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,var(--gold),var(--gold-soft));
+    color:#2a1c12;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;overflow:hidden;background-size:cover;background-position:center}
+  .proName{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.1}
+  .proTrade{font-size:12.5px;color:var(--gold);letter-spacing:.4px}
+  .leadRow{display:flex;gap:10px;justify-content:center;margin:2px 0 14px}
+  .leadBtn{background:linear-gradient(180deg,var(--gold),var(--gold-soft));color:#2a1c12;border:none;border-radius:40px;
+    padding:13px 22px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 10px 26px rgba(216,176,106,.30)}
+  .leadBtn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:600}
   .eyebrow{text-align:center;color:var(--gold);font-size:12px;letter-spacing:4px;font-weight:600;margin:18px 0 6px}
 
   .stageWrap{position:relative;height:min(62vh,460px);perspective:1200px;margin:6px 0 10px;display:flex;align-items:center;justify-content:center}
@@ -115,8 +125,14 @@
 <div class="room"><div class="box"><div class="face back"></div><div class="face floor"></div><div class="face ceil"></div><div class="face lwall"></div><div class="face rwall"></div></div><div class="glow"></div></div>
 <div class="wrap">
   <div class="top">
-    <div class="logo">Done<b>By</b></div>
-    <div class="count"><span id="pcount">0</span> projects</div>
+    <div class="pro" onclick="editPro()" title="Tap to edit your name & trade">
+      <div class="avatar" id="proAvatar">J</div>
+      <div class="proTxt">
+        <div class="proName" id="proName">Your Name</div>
+        <div class="proTrade" id="proTrade">Tap to set your trade</div>
+      </div>
+    </div>
+    <div style="text-align:right"><div class="brand">Done<b>By</b></div><div class="count"><span id="pcount">0</span> projects</div></div>
   </div>
   <div class="eyebrow">MY PORTFOLIO</div>
 
@@ -128,6 +144,11 @@
 
   <div class="title">My work</div>
   <div class="sub" id="subline">Each project shows as one card</div>
+
+  <div class="leadRow">
+    <button class="leadBtn" id="quoteBtn" onclick="contactPro()">💬 Text me for a quote</button>
+    <button class="leadBtn ghost" onclick="sharePortfolio()">⤴ Share</button>
+  </div>
 
   <div class="btns">
     <button class="btn gold" onclick="newProject()">＋ New project</button>
@@ -191,6 +212,36 @@
   function sizeCards(){const w=Math.min(window.innerWidth,460);const cw=Math.min(210,Math.round(w*0.5));const ch=Math.round(cw*1.35);
     document.documentElement.style.setProperty('--cw',cw+'px');document.documentElement.style.setProperty('--ch',ch+'px');window._cw=cw;}
 
+  // ---- pro profile ----
+  let pro={name:'',trade:'',phone:'',avatar:null};
+  function renderPro(){
+    document.getElementById('proName').textContent=pro.name||'Your Name';
+    document.getElementById('proTrade').textContent=pro.trade||(pro.name?'Tap to set your trade':'Tap to set your name & trade');
+    const av=document.getElementById('proAvatar');
+    if(pro.avatar){av.style.backgroundImage='url('+pro.avatar+')';av.textContent='';}
+    else{av.style.backgroundImage='';av.textContent=(pro.name||'D').trim().charAt(0).toUpperCase();}
+    document.getElementById('quoteBtn').style.display=pro.phone?'inline-block':'none';
+    document.title=pro.name?(pro.name+' · DoneBy'):'DoneBy';
+  }
+  function editPro(){
+    const name=prompt('Your name (shown to customers):',pro.name||'');if(name===null)return;
+    const trade=prompt('Your trade (e.g. Custom Cakes, Flooring, Hair Stylist):',pro.trade||'');if(trade===null)return;
+    const phone=prompt('Your phone for customer texts (optional):',pro.phone||'');
+    pro.name=(name||'').trim();pro.trade=(trade||'').trim();pro.phone=(phone||'').trim();
+    savePro();renderPro();toast('Profile saved');
+  }
+  function contactPro(){
+    if(!pro.phone){toast('Set your phone in your profile');return;}
+    location.href='sms:'+pro.phone.replace(/[^0-9+]/g,'')+'?&body='+encodeURIComponent('Hi '+(pro.name||'')+', I saw your work on DoneBy — can I get a quote?');
+  }
+  async function sharePortfolio(){
+    const text=(pro.name?pro.name+' · ':'')+(pro.trade?pro.trade+' — ':'')+'my work portfolio on DoneBy';
+    try{if(navigator.share){await navigator.share({title:'DoneBy',text,url:location.href});return;}}catch(e){}
+    try{await navigator.clipboard.writeText(location.href);toast('Link copied');}catch(e){toast('Copy the link from the address bar');}
+  }
+  async function savePro(){try{await idbSet('pro',JSON.parse(JSON.stringify(pro)));}catch(e){}}
+  async function loadPro(){try{const p=await idbGet('pro');if(p)pro=p;}catch(e){}renderPro();}
+
   function newProject(){
     const name=prompt('Project name (e.g. Kitchen Remodel):');
     if(!name||!name.trim())return;
@@ -224,7 +275,7 @@
 
   function build(){
     stage.innerHTML='';const n=projects.length;
-    document.getElementById('pcount').textContent=n;
+    var pc=document.getElementById('pcount');if(pc)pc.textContent=n;
     document.getElementById('empty').style.display=n?'none':'flex';
     document.getElementById('hint').style.display=n?'block':'none';
     document.getElementById('subline').textContent=n?'Tap a project to open · drag to spin':'Each project shows as one card';
@@ -373,7 +424,7 @@
   async function loadRoom(){try{const r=await idbGet('room2');if(r&&r.surf)roomCfg=r;}catch(e){}buildSurfTabs();applyRoom();}
 
   sizeCards();window.addEventListener('resize',()=>{sizeCards();build();});
-  load().then(()=>{build();});loadRoom();requestAnimationFrame(frame);
+  load().then(()=>{build();});loadRoom();loadPro();requestAnimationFrame(frame);
 </script>
 </body>
 </html>
